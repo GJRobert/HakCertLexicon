@@ -8,4 +8,16 @@ function generate() {
     p.innerHTML = i + " 詞&nbsp;<audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/w/1si-01-" + i + ".mp3' type='audio/mpeg'></audio>" + " 句&nbsp;<audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/s/1si-01-" + i + "s.mp3' type='audio/mpeg'></audio>";
     contentContainer.appendChild(p);
   }
+  
+  document.getElementById('fileInput').addEventListener('change', function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const content = e.target.result;
+        document.getElementById('output').innerText = content;
+      };
+      reader.readAsText(file);
+    }
+  });
 }
