@@ -1,0 +1,37 @@
+.radioItem {
+  display: inline-flex;
+  align-items: center;
+  column-gap: 4px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.radioItem:not(:last-of-type) {
+  margin-right: 16px;
+}
+
+.radioButton {
+  appearance: none;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #06b6d4;
+  border-radius: 9999px;
+  background-color: #dddddd;
+  cursor: pointer;
+}
+
+.radioButton:checked {
+  background-color: transparent;
+}
+
+.radioButton:checked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 12px;
+  height: 12px;
+  margin: auto;
+  border: 2px solid #06b6d4;
+  border-radius: 9999px;
+}
