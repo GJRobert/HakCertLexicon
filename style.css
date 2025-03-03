@@ -1,3 +1,4 @@
+/* radio button style from <https: //webspe.net/tools/en/radio-button/> */
 .radioItem {
   display: inline-flex;
   align-items: center;
@@ -35,3 +36,27 @@
   border: 2px solid #06b6d4;
   border-radius: 9999px;
 }
+
+/* Mine */
+ruby {
+  font-family: '源石黑體' !important;
+  font-size: 1.5em;
+  font-weight: 700;
+}
+rt {
+  font-size: 1em;
+  font-family: 'jf金萱那提2.0' !important;
+  margin-bottom: 0.3em;
+}
+body * {
+  font-family: Iansui, serif;
+  line-height: 1.8em;
+}
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+td {padding: 0.5em;}
+
+.no {font-family: 'Operator Mono';}
+.sentence {font-family: 'Marion', 'Marion+jfBunguan', cursive;}

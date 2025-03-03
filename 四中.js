@@ -33,7 +33,7 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 //console.log(cat);
 
 function generate() {
-  var cat;
+  var cat = "1人體與醫療";
   // Select all inputs with name="category"
   var radios = document.querySelectorAll("input[name=\"category\"]");
 
@@ -97,10 +97,11 @@ function generate() {
             if (no[1] <= 99) {no[1] = "0"+no[1];}
             var item = document.createElement("tr");
             //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-            item.innerHTML = "<td>" + line.編號 + "</td><td>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td><td>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td><td><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/w/1si-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio>" + " 句&nbsp;<audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/s/1si-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio></td>";
-            contentContainer.appendChild(item);
+            item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br>110 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/w/1si-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>111 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/111/2/si/w/1si-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>110 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/s/1si-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>111 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/111/2/si/s/1si-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+            table.appendChild(item);
           } else {continue;}
         }
+        table.setAttribute("width","100%");
         contentContainer.appendChild(table);
       };
       reader.readAsText(file);
