@@ -97,7 +97,7 @@ function generate() {
             if (no[1] <= 99) {no[1] = "0"+no[1];}
             var item = document.createElement("tr");
             //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-            item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>" + line.四縣客家語 + "<rt>" + line.四縣客語標音 + "</rt></ruby><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/2/si/1si-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.四縣華語詞義 + "</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/2/si/1si-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+            item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/5/si/si-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/5/si/si-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
             table.appendChild(item);
           } else {continue;}
         }
