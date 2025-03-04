@@ -39,7 +39,7 @@
 
 /* Mine */
 ruby {
-  font-family: '源石黑體' !important;
+  font-family: 'Heiti TC', 'Heiti SC', '源石黑體' !important;
   font-size: 1.5em;
   font-weight: 700;
 }
@@ -48,15 +48,19 @@ rt {
   font-family: 'jf金萱那提2.0' !important;
   margin-bottom: 0.3em;
 }
+body {
+  font-size: 20px;
+}
 body * {
   font-family: Iansui, serif;
   line-height: 1.8em;
 }
-table {
+/*table {
   table-layout: fixed;
   width: 100%;
-}
+}*/
 td {padding: 0.5em;}
+tr:nth-child(even) { background-color: rgba(100,100,100,0.5); }
 
 .no {font-family: 'Operator Mono';}
 .sentence {font-family: 'Marion', 'Marion+jfBunguan', cursive;}
