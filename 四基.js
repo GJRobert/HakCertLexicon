@@ -80,7 +80,7 @@ function generate() {
         // var cat = document.querySelector('input[name="category"]:checked');
         //for (i=0; i<=data.length; i++) {
         for (const line of arr) {
-          console.log(line.四縣例句);
+          //console.log(line.四縣例句);
 
           //if (line.分類 === cat) {
 
