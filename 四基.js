@@ -1,6 +1,6 @@
 function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan97/javascript-csv-array-example/blob/master/index.html
 
-  str = str.replace(/\r/g,""); // GHSRobert 自己加的，原本弄的會在行尾跑出 \r
+/*  //str = str.replace(/\r/g,""); // GHSRobert 自己加的，原本弄的會在行尾跑出 \r；好像是 CSV 檔才要？
 
   // slice from start of text to the first \n index
   // use split to create an array from string by delimiter
@@ -25,7 +25,23 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
   });
 
   // return the array
-  return arr;
+  return arr;*/
+
+  /* GHSRobert + Gemini */
+  const rows = str.split('\n');
+  const headers = rows[0].split(',');
+  const data = [];
+
+  // 將每一列轉換成 JavaScript 物件
+  for (let i = 1; i < rows.length; i++) {
+    const values = rows[i].split(',');
+    const obj = {};
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]] = values[j];
+    }
+    data.push(obj);
+  }
+  return data;
 }
 
 
@@ -46,35 +62,27 @@ function generate() {
   });
 
   var contentContainer = document.getElementById("generated");
-  /*const n = 85;
-  for (let i = 1; i < n+1; i++) {
-    if (i <= 9) {i = "0"+i;}
-    if (i <= 99) {i = "0"+i;}
-    var p = document.createElement("p");
-    p.innerHTML = i + " 詞&nbsp;<audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/w/1si-01-" + i + ".mp3' type='audio/mpeg'></audio>" + " 句&nbsp;<audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/110/2/si/s/1si-01-" + i + "s.mp3' type='audio/mpeg'></audio>";
-    contentContainer.appendChild(p);
-  }*/
 
   
-  document.getElementById('fileInput').addEventListener('change', function (event) {
+/*  document.getElementById('fileInput').addEventListener('change', function (event) {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
-        const content = e.target.result;
-        // document.getElementById('output').innerText = content;
-        const data = csvToArray(content);
-        //var raw = document.createElement("p");
-        //raw.innerHTML = JSON.stringify(data); // 測試 okay 了
-        //contentContainer.appendChild(raw);
+        const content = e.target.result;*/
+        const content = 四基;
+        //document.getElementById('output').innerText = content;
+        const arr = csvToArray(content);
+        //console.log(arr[3].編號);
 
         var table = document.createElement("table");
 
         // var cat = document.querySelector('input[name="category"]:checked');
         //for (i=0; i<=data.length; i++) {
-        for (const line of data) {
+        for (const line of arr) {
+          console.log(line.四縣例句);
 
-          if (line.分類 === cat) {
+          //if (line.分類 === cat) {
 
             //var 句 = data[i].四縣例句.replace(/"/g,'').replace(/\\n/g,'<br>');
             //var 譯 = data[i].四縣翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
@@ -99,12 +107,13 @@ function generate() {
             //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
             item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/5/si/si-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/5/si/si-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
             table.appendChild(item);
-          } else {continue;}
+          //} else {continue;}
         }
         table.setAttribute("width","100%");
         contentContainer.appendChild(table);
-      };
-      reader.readAsText(file);
+/*      };
+/*      reader.readAsText(file);
     }
-  });
+  });*/
+  //contentContainer.innerHTML = arr[3].四縣翻譯;
 }
