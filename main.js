@@ -49,10 +49,17 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 //console.log(cat);
 
 function generate(content) {
+  console.log(content.name); // 依 Gemini 說的，把 content 改為物件，就可以取得名稱了
   var contentContainer = document.getElementById("generated");
   contentContainer.innerHTML = "";
-  var cat = "人體與醫療";
-  var arr = csvToArray(content);
+
+  var title = document.createElement("h1");
+  title.innerHTML = "現在學習的是" + content.name;
+  contentContainer.appendChild(title);
+
+  // var cat = "人體與醫療";
+
+  var arr = csvToArray(content.content);
   
   // Select all inputs with name="category"
   var radios = document.querySelectorAll("input[name=\"category\"]");
@@ -63,6 +70,11 @@ function generate(content) {
       cat = document.querySelector('input[name="category"]:checked').value;
       console.log(cat);
       contentContainer.innerHTML = "";
+
+      var title = document.createElement("h1");
+      title.innerHTML = "現在學習的是"+content.name+"的"+cat;
+      contentContainer.appendChild(title);
+      
       var table = document.createElement("table");
       table.innerHTML = "";
       for (const line of arr) {
