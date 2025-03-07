@@ -51,22 +51,23 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 function generate(content) {
   var contentContainer = document.getElementById("generated");
   contentContainer.innerHTML = "";
-  var cat = "1人體與醫療";
-  const arr = csvToArray(content);
-  var table = document.createElement("table");
-
+  var cat = "人體與醫療";
+  var arr = csvToArray(content);
+  
   // Select all inputs with name="category"
   var radios = document.querySelectorAll("input[name=\"category\"]");
-
+  
   // Use Array.forEach to add an event listener to each radio element.
   radios.forEach(function(radio) {
     radio.addEventListener('change', function() {
       cat = document.querySelector('input[name="category"]:checked').value;
       console.log(cat);
-      console.log("content");
+      contentContainer.innerHTML = "";
+      var table = document.createElement("table");
       table.innerHTML = "";
       for (const line of arr) {
-        if (line.分類 === cat) {
+//        if (line.分類 === cat) {
+        if (line.分類.includes(cat) == true) { // 因為基初和中高的類別順序不同，所以 radio button 不再加編號，改為用 includes 來比對
     
           //var 句 = data[i].四縣例句.replace(/"/g,'').replace(/\\n/g,'<br>');
           //var 譯 = data[i].四縣翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
@@ -96,6 +97,7 @@ function generate(content) {
       table.setAttribute("width","100%");
       contentContainer.appendChild(table);
     })
+    //table.innerHTML = "";
   });
 
 
