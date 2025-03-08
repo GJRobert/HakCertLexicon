@@ -50,6 +50,21 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 
 function generate(content) {
   console.log(content.name); // 依 Gemini 說的，把 content 改為物件，就可以取得名稱了
+  console.log(content.content);
+
+  var mediaKey;
+  switch (content.name) {
+    case "四基":
+      mediaKey = "5/si/si";
+      break;
+    case "四初":
+      mediaKey = "1/si/si";
+      break;
+    case "四中":
+      mediaKey = "2/si/1si";
+      break;
+  }
+
   var contentContainer = document.getElementById("generated");
   contentContainer.innerHTML = "";
 
@@ -60,6 +75,8 @@ function generate(content) {
   // var cat = "人體與醫療";
 
   var arr = csvToArray(content.content);
+  console.log(arr);
+  //arr = arr.replace(/\r/g,"");
   
   // Select all inputs with name="category"
   var radios = document.querySelectorAll("input[name=\"category\"]");
@@ -98,11 +115,12 @@ function generate(content) {
           //var no = data[i].編號.split("-");
           var no = line.編號.split("-");
           if (no[0] <= 9) {no[0] = "0"+no[0];}
+          if (content.name.includes("初") == true) {no[0] = "0"+no[0];} // 初很煩檔名的類別號碼前面還要再加 0，神經喔
           if (no[1] <= 9) {no[1] = "0"+no[1];}
           if (no[1] <= 99) {no[1] = "0"+no[1];}
           var item = document.createElement("tr");
           //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-          item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/5/si/si-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/5/si/si-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
           table.appendChild(item);
         } else {continue;}
       }
