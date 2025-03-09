@@ -63,6 +63,9 @@ function generate(content) {
     case "四中":
       mediaKey = "2/si/1si";
       break;
+    case "四中高":
+      mediaKey = "3/si/2si";
+      break;
   }
 
   var contentContainer = document.getElementById("generated");
@@ -71,9 +74,9 @@ function generate(content) {
   var title = document.createElement("h1");
   title.innerHTML = "現在學習的是" + content.name;
   contentContainer.appendChild(title);
-
+  
   // var cat = "人體與醫療";
-
+  
   var arr = csvToArray(content.content);
   console.log(arr);
   //arr = arr.replace(/\r/g,"");
@@ -87,10 +90,11 @@ function generate(content) {
       cat = document.querySelector('input[name="category"]:checked').value;
       console.log(cat);
       contentContainer.innerHTML = "";
-
+      
       var title = document.createElement("h1");
       title.innerHTML = "現在學習的是"+content.name+"的"+cat;
       contentContainer.appendChild(title);
+      title.setAttribute("id","title");
       
       var table = document.createElement("table");
       table.innerHTML = "";
@@ -120,7 +124,7 @@ function generate(content) {
           if (no[1] <= 99) {no[1] = "0"+no[1];}
           var item = document.createElement("tr");
           //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-          item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br>112 <audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          item.innerHTML = "<td class='no'>" + line.編號 + "</td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
           table.appendChild(item);
         } else {continue;}
       }
