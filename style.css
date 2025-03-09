@@ -59,7 +59,7 @@ body * {
   table-layout: fixed;
   width: 100%;
 }*/
-td {padding: 0.5em;}
+td {padding: 1em; max-width: 60vw;}
 tr:nth-child(even) { background-color: rgba(100,100,100,0.5); }
 
 .no {font-family: 'Operator Mono';}
