@@ -39,7 +39,7 @@
 
 /* Mine */
 ruby {
-  font-family: 'Heiti TC', 'Heiti SC', '源石黑體' !important;
+  font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, !important;
   font-size: 1.5em;
   font-weight: 700;
 }
@@ -66,9 +66,9 @@ tr:nth-child(even) { background-color: rgba(100,100,100,0.5); }
   height: 1em;
   border-radius: 1em;
 }
-audio {max-width: 10vw;}
+audio {max-width: 5em;}
 .no {font-family: 'Operator Mono';}
-.sentence {font-family: 'Marion', 'Marion+jfBunguan', cursive;}
+.sentence {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
 #title {position: sticky;top: 10px;background: rgba(100,100,100,0.5);backdrop-filter: blur(5px);}
 .bookmarkBtn {
   background: none;

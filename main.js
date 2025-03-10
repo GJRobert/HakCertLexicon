@@ -151,8 +151,28 @@ function generate(content) {
       
             console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
             //progress.innerHTML = "";
-            progress.innerHTML = `，之前進度到 ${rowId}`;
+            progress.innerHTML = `，儲存書籤進度到 ${rowId}`;
             // 可選：提供使用者回饋，例如改變按鈕樣式或顯示訊息
+          });
+        });
+
+        const audioElements = document.querySelectorAll('audio');
+      
+        audioElements.forEach(audio => {
+          audio.addEventListener('play', function() {
+            const rowButton = this.closest('tr').querySelector('button');
+            const rowId = rowButton.dataset.rowId;
+//            const rowId = this.closest('button').dataset.rowId;
+
+            localStorage.setItem("bookmark", JSON.stringify({
+              rowId: rowId,
+              cat: b,
+              tableName: a
+            }));
+      
+            console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
+            //progress.innerHTML = "";
+            progress.innerHTML = `，剛播放進度到 ${rowId}`;
           });
         });
       //});
