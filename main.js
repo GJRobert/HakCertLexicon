@@ -172,7 +172,7 @@ function generate(content) {
       
             console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
             //progress.innerHTML = "";
-            progress.innerHTML = `，剛播放進度到 ${rowId}`;
+            progress.innerHTML = `，剛播放進度到 <a href="#${rowId}">${rowId}</a>`;
           });
         });
       //});
@@ -191,10 +191,31 @@ function generate(content) {
   //contentContainer.innerHTML = arr[3].四縣翻譯;
 }
 
+/* 最頂端一開始讀取進度 */
 document.addEventListener('DOMContentLoaded', function() {
   const bookmarkData = JSON.parse(localStorage.getItem('bookmark'));
   var showProgress = document.getElementById("progress");
   if (bookmarkData) {
     showProgress.innerHTML = "進度到" + bookmarkData.tableName + bookmarkData.cat + "，第 <a href=\"#"+bookmarkData.rowId+"\">" + bookmarkData.rowId + "</a> 行。";
   }
+});
+
+/* 回到頁頂的按鈕 */
+document.addEventListener('DOMContentLoaded', function() {
+  const backToTopButton = document.getElementById('backToTopBtn');
+
+  // 當捲動超過一定距離時顯示按鈕
+  window.onscroll = function() {
+    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+      backToTopButton.style.display = 'block';
+    } else {
+      backToTopButton.style.display = 'none';
+    }
+  };
+
+  // 點擊按鈕時回到頂部
+  backToTopButton.addEventListener('click', function() {
+    document.body.scrollTop = 0; // For Safari
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+  });
 });

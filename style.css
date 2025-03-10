@@ -39,7 +39,7 @@
 
 /* Mine */
 ruby {
-  font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, !important;
+  font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo !important;
   font-size: 1.5em;
   font-weight: 700;
 }
@@ -52,7 +52,7 @@ body {
   font-size: 20px;
 }
 body * {
-  font-family: Iansui, serif;
+  font-family: Iansui, tauhu-oo, serif;
   line-height: 1.8em;
 }
 /*table {
@@ -74,4 +74,26 @@ audio {max-width: 5em;}
   background: none;
   border: none;
   cursor: pointer;
+}
+#generated td:nth-of-type(2) {
+  text-align: center;
+}
+
+#backToTopBtn {
+  display: none; /* 預設隱藏 */
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 99;
+  border: none;
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.5); /* 半透明黑色背景 */
+  color: white;
+  cursor: pointer;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 18px;
+}
+#backToTopBtn:hover {
+  background-color: rgba(0, 0, 0, 0.8); /* 滑鼠懸停時加深背景顏色 */
 }
