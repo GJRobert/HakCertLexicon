@@ -124,9 +124,10 @@ function generate(content) {
           if (content.name.includes("初") == true) {no[0] = "0"+no[0];} // 初很煩檔名的類別號碼前面還要再加 0，神經喔
           if (no[1] <= 9) {no[1] = "0"+no[1];}
           if (no[1] <= 99) {no[1] = "0"+no[1];}
+          let audioIndex = (no[1].replace(/^0+/,'') - 1) * 2;
           var item = document.createElement("tr");
           //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-          item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button></td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\""+audioIndex+"\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
           table.appendChild(item);
         } else {continue;}
       }
@@ -137,6 +138,10 @@ function generate(content) {
       // 嘗試寫入學習進度，Gemini 教的
       //document.addEventListener('DOMContentLoaded', function() {
         var progress = document.createElement("span");
+        const bookmarkData = JSON.parse(localStorage.getItem('bookmark'));
+        if (bookmarkData) {
+          progress.innerHTML = "，可跳到已存進度第 <a href=\"#" + bookmarkData.rowId + "\">" + bookmarkData.rowId + "</a> 行（" + bookmarkData.percentage + "%）";
+        }
         title.appendChild(progress);
         const bookmarkButtons = document.querySelectorAll('.bookmarkBtn');
         const a = content.name; // 變數 a 的值
@@ -145,17 +150,21 @@ function generate(content) {
         bookmarkButtons.forEach(button => {
           button.addEventListener('click', function() {
             const rowId = this.dataset.rowId; // Gemini 說：存取 dataset 屬性的方式是透過駝峰式命名法，例如 data-row-id 對應到 dataset.rowId，data-variable-value 對應到 dataset.variableValue。因此，this.dataset.rowId 可以正確抓取 data-row-id 屬性的值。
+            let rowNum = rowId.replace(/^0+/, '');
+            let percentage = rowNum / (bookmarkButtons.length) * 100;
+            let percentageFixed = percentage.toFixed(2);
             
             // 寫入 localStorage
             localStorage.setItem("bookmark", JSON.stringify({
               rowId: rowId,
+              percentage: percentageFixed,
               cat: b,
               tableName: a
             }));
             
             console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
             //progress.innerHTML = "";
-            progress.innerHTML = `，儲存書籤進度到 ${rowId}`;
+            progress.innerHTML = `，儲存書籤進度到 <a href="#${rowId}">${rowId}</a> (${percentageFixed}%)`;
             // 可選：提供使用者回饋，例如改變按鈕樣式或顯示訊息
           });
         });
@@ -168,24 +177,28 @@ function generate(content) {
           audio.addEventListener('play', function() {
             const rowButton = this.closest('tr').querySelector('button');
             const rowId = rowButton.dataset.rowId;
-//            const rowId = this.closest('button').dataset.rowId;
+            //const rowId = this.closest('button').dataset.rowId;
+            let rowNum = rowId.replace(/^0+/,'');
+            let percentage = rowNum / (audioElements.length/2) * 100;
+            let percentageFixed = percentage.toFixed(2);
 
             localStorage.setItem("bookmark", JSON.stringify({
               rowId: rowId,
+              percentage: percentageFixed,
               cat: b,
               tableName: a
             }));
       
             console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
             //progress.innerHTML = "";
-            progress.innerHTML = `，剛播放進度到 <a href="#${rowId}">${rowId}</a>`;
+            progress.innerHTML = `，剛播放進度到 <a href="#${rowId}">${rowId}</a> (${percentageFixed}%)`;
           });
         });
 
         /* 播放全部！ */
         /* 嘗試每次重新產生按鈕 */
         // 建立 audioControls div
-        const audioControlsDiv = document.createElement('div');
+        const audioControlsDiv = document.createElement('span'); /* 本來是 div */
         audioControlsDiv.id = 'audioControls';
       
         // 建立 playAllBtn button
@@ -212,13 +225,15 @@ function generate(content) {
         audioControlsDiv.appendChild(buttonStop);
       
         // 將 audioControls div 新增到 generated div
-        contentContainer.appendChild(audioControlsDiv);
+        // 再改為放到 title 裡
+        title.appendChild(audioControlsDiv);
 
 
 
         const playAllButton = document.getElementById('playAllBtn');
         const pauseResumeButton = document.getElementById('pauseResumeBtn');
         const stopButton = document.getElementById('stopBtn');
+        const playFromRowButtons = document.querySelectorAll('.playFromThisRow');
 
         
         let currentAudioIndex = 0;
@@ -285,6 +300,18 @@ function generate(content) {
             pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
           }
         });
+
+        playFromRowButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            if (!isPlaying) {
+              currentAudioIndex = parseInt(this.dataset.index);
+              isPlaying = true;
+              isPaused = false;
+              playAudio(currentAudioIndex);
+              pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+            }
+          });
+        });
       //});
     })
     //table.innerHTML = "";
@@ -306,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const bookmarkData = JSON.parse(localStorage.getItem('bookmark'));
   var showProgress = document.getElementById("progress");
   if (bookmarkData) {
-    showProgress.innerHTML = "進度到" + bookmarkData.tableName + bookmarkData.cat + "，第 <a href=\"#"+bookmarkData.rowId+"\">" + bookmarkData.rowId + "</a> 行。";
+    showProgress.innerHTML = "進度到<span class='progressLvl'>" + bookmarkData.tableName +"</span><span class='progressCat'>"+ bookmarkData.cat + "</span>，第 <a href=\"#"+bookmarkData.rowId+"\">" + bookmarkData.rowId + "</a> 行（該類別 " + bookmarkData.percentage +"%）。";
   }
 });
 
