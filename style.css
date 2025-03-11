@@ -107,3 +107,11 @@ audio {max-width: 5em;}
 #backToTopBtn:hover {
   background-color: rgba(0, 0, 0, 0.8); /* 滑鼠懸停時加深背景顏色 */
 }
+
+/* 播放全部 */
+#audioControls {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 99;
+}

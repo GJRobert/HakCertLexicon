@@ -175,6 +175,53 @@ function generate(content) {
             progress.innerHTML = `，剛播放進度到 <a href="#${rowId}">${rowId}</a>`;
           });
         });
+
+        /* 播放全部！ */
+        const playAllButton = document.getElementById('playAllBtn');
+        const pauseButton = document.getElementById('pauseBtn');
+        const stopButton = document.getElementById('stopBtn');
+      
+        let currentAudioIndex = 0;
+        let isPlaying = false;
+      
+        function playAudio(index) {
+          if (index >= audioElements.length) {
+            currentAudioIndex = 0; // 回到第一個音訊
+            isPlaying = false;
+            return;
+          }
+      
+          const audio = audioElements[index];
+          audio.play();
+          audio.addEventListener('ended', function() {
+            playAudio(index + 1);
+          }, { once: true }); // 使用 once: true 確保事件只執行一次
+      
+          audio.parentElement.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 捲動到音訊位置
+        }
+      
+        playAllButton.addEventListener('click', function() {
+          isPlaying = true;
+          playAudio(currentAudioIndex);
+        });
+      
+        pauseButton.addEventListener('click', function() {
+          if (isPlaying) {
+            audioElements.forEach(audio => audio.pause());
+            isPlaying = false;
+          }
+        });
+      
+        stopButton.addEventListener('click', function() {
+          if (isPlaying) {
+            audioElements.forEach(audio => {
+              audio.pause();
+              audio.currentTime = 0;
+            });
+            currentAudioIndex = 0;
+            isPlaying = false;
+          }
+        });
       //});
     })
     //table.innerHTML = "";
