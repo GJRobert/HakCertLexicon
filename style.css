@@ -115,3 +115,10 @@ audio {max-width: 5em;}
   right: 10px;
   z-index: 99;
 }
+#audioControls button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  margin: 0 5px;
+  cursor: pointer;
+}

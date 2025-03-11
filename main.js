@@ -95,7 +95,9 @@ function generate(content) {
       title.innerHTML = "現在學習的是"+content.name+"的"+cat;
       contentContainer.appendChild(title);
       title.setAttribute("id","title");
-      
+
+      var audioElements = "" // 要在這邊把先前 generate 的 audio 都洗掉
+
       var table = document.createElement("table");
       table.innerHTML = "";
       for (const line of arr) {
@@ -130,6 +132,8 @@ function generate(content) {
       }
       table.setAttribute("width","100%");
       contentContainer.appendChild(table);
+
+      
       // 嘗試寫入學習進度，Gemini 教的
       //document.addEventListener('DOMContentLoaded', function() {
         var progress = document.createElement("span");
@@ -137,27 +141,29 @@ function generate(content) {
         const bookmarkButtons = document.querySelectorAll('.bookmarkBtn');
         const a = content.name; // 變數 a 的值
         const b = cat;
-      
+        
         bookmarkButtons.forEach(button => {
           button.addEventListener('click', function() {
             const rowId = this.dataset.rowId; // Gemini 說：存取 dataset 屬性的方式是透過駝峰式命名法，例如 data-row-id 對應到 dataset.rowId，data-variable-value 對應到 dataset.variableValue。因此，this.dataset.rowId 可以正確抓取 data-row-id 屬性的值。
-      
+            
             // 寫入 localStorage
             localStorage.setItem("bookmark", JSON.stringify({
               rowId: rowId,
               cat: b,
               tableName: a
             }));
-      
+            
             console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
             //progress.innerHTML = "";
             progress.innerHTML = `，儲存書籤進度到 ${rowId}`;
             // 可選：提供使用者回饋，例如改變按鈕樣式或顯示訊息
           });
         });
+        
 
-        const audioElements = document.querySelectorAll('audio');
+        audioElements = document.querySelectorAll('#generated audio');
       
+        /* 點每個 audio 都會記錄播放進度 */
         audioElements.forEach(audio => {
           audio.addEventListener('play', function() {
             const rowButton = this.closest('tr').querySelector('button');
@@ -177,49 +183,106 @@ function generate(content) {
         });
 
         /* 播放全部！ */
-        const playAllButton = document.getElementById('playAllBtn');
-        const pauseButton = document.getElementById('pauseBtn');
-        const stopButton = document.getElementById('stopBtn');
+        /* 嘗試每次重新產生按鈕 */
+        // 建立 audioControls div
+        const audioControlsDiv = document.createElement('div');
+        audioControlsDiv.id = 'audioControls';
       
+        // 建立 playAllBtn button
+        const buttonPlayAll = document.createElement('button');
+        buttonPlayAll.id = 'playAllBtn';
+        buttonPlayAll.title = '依序播放';
+        buttonPlayAll.innerHTML = '<i class="fas fa-play"></i>';
+      
+        // 建立 pauseResumeBtn button
+        const buttonPauseResume = document.createElement('button');
+        buttonPauseResume.id = 'pauseResumeBtn';
+        buttonPauseResume.title = '暫停/繼續';
+        buttonPauseResume.innerHTML = '<i class="fas fa-pause"></i>';
+      
+        // 建立 stopBtn button
+        const buttonStop = document.createElement('button');
+        buttonStop.id = 'stopBtn';
+        buttonStop.title = '停止';
+        buttonStop.innerHTML = '<i class="fas fa-stop"></i>';
+      
+        // 將按鈕新增到 audioControls div
+        audioControlsDiv.appendChild(buttonPlayAll);
+        audioControlsDiv.appendChild(buttonPauseResume);
+        audioControlsDiv.appendChild(buttonStop);
+      
+        // 將 audioControls div 新增到 generated div
+        contentContainer.appendChild(audioControlsDiv);
+
+
+
+        const playAllButton = document.getElementById('playAllBtn');
+        const pauseResumeButton = document.getElementById('pauseResumeBtn');
+        const stopButton = document.getElementById('stopBtn');
+
+        
         let currentAudioIndex = 0;
         let isPlaying = false;
+        let isPaused = false;
+        let currentAudio = null;
       
         function playAudio(index) {
           if (index >= audioElements.length) {
-            currentAudioIndex = 0; // 回到第一個音訊
+            currentAudioIndex = 0;
             isPlaying = false;
+            isPaused = false;
+            currentAudio = null;
+            pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
             return;
           }
       
-          const audio = audioElements[index];
-          audio.play();
-          audio.addEventListener('ended', function() {
-            playAudio(index + 1);
-          }, { once: true }); // 使用 once: true 確保事件只執行一次
+          currentAudio = audioElements[index];
+          currentAudio.play();
+          currentAudio.addEventListener('ended', handleAudioEnded, { once: true });
+          currentAudio.parentElement.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       
-          audio.parentElement.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 捲動到音訊位置
+        function handleAudioEnded() {
+          currentAudioIndex++; // 更新索引
+          playAudio(currentAudioIndex);
         }
       
         playAllButton.addEventListener('click', function() {
-          isPlaying = true;
-          playAudio(currentAudioIndex);
+          if (!isPlaying) {
+            isPlaying = true;
+            isPaused = false;
+            currentAudioIndex = 0;
+            playAudio(currentAudioIndex);
+            pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+          }
         });
       
-        pauseButton.addEventListener('click', function() {
+        pauseResumeButton.addEventListener('click', function() {
           if (isPlaying) {
-            audioElements.forEach(audio => audio.pause());
-            isPlaying = false;
+            if (isPaused) {
+              currentAudio.play();
+              isPaused = false;
+              pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+              currentAudio.pause();
+              isPaused = true;
+              pauseResumeButton.innerHTML = '<i class="fas fa-play"></i>';
+            }
           }
         });
       
         stopButton.addEventListener('click', function() {
           if (isPlaying) {
-            audioElements.forEach(audio => {
-              audio.pause();
-              audio.currentTime = 0;
-            });
+            if (currentAudio) {
+              currentAudio.pause();
+              currentAudio.currentTime = 0;
+              currentAudio.removeEventListener('ended', handleAudioEnded);
+            }
             currentAudioIndex = 0;
             isPlaying = false;
+            isPaused = false;
+            currentAudio = null;
+            pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
           }
         });
       //});
