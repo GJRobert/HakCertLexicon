@@ -1,3 +1,43 @@
+/* Gemini 老師。這種方式還是會因為 CORS 被擋下，無法偵測
+function checkAudioStatus(url) {
+  return fetch(url, { method: 'HEAD' })
+    .then(response => {
+      if (response.ok) {
+        return Promise.resolve(true); // 音訊存在且可存取
+      } else {
+        return Promise.resolve(false); // 音訊不存在或無法存取
+      }
+    })
+    .catch(error => {
+      console.error('檢查音訊狀態時發生錯誤：', error);
+      if (error instanceof TypeError && error.message.includes('CORS')) {
+        console.error('偵測到 CORS 錯誤，ORB 封鎖。');
+        return Promise.resolve(false); // 發生 CORS 錯誤，認為音訊無法存取
+      }
+      return Promise.resolve(false); // 其他錯誤
+    });
+}*/
+/* 這也會被 CORS 擋，氣人 
+function checkAudioStatus(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('HEAD', url, true);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        resolve(true); // 音訊存在
+      } else if (xhr.status === 404) {
+        resolve(false); // 音訊不存在 (404)
+      } else {
+        resolve(false); // 其他錯誤
+      }
+    };
+    xhr.onerror = function() {
+      resolve(false); // 發生錯誤
+    };
+    xhr.send();
+  });
+}*/
+
 function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan97/javascript-csv-array-example/blob/master/index.html
 
 /*  //str = str.replace(/\r/g,""); // GHSRobert 自己加的，原本弄的會在行尾跑出 \r；好像是 CSV 檔才要？
@@ -50,7 +90,7 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 
 function generate(content) {
   console.log(content.name); // 依 Gemini 說的，把 content 改為物件，就可以取得名稱了
-  console.log(content.content);
+  //console.log(content.content);
 
   var mediaKey;
   switch (content.name) {
@@ -78,7 +118,7 @@ function generate(content) {
   // var cat = "人體與醫療";
   
   var arr = csvToArray(content.content);
-  console.log(arr);
+  //console.log(arr);
   //arr = arr.replace(/\r/g,"");
   
   // Select all inputs with name="category"
@@ -127,7 +167,17 @@ function generate(content) {
           let audioIndex = (no[1].replace(/^0+/,'') - 1) * 2;
           var item = document.createElement("tr");
           //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-          item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\""+audioIndex+"\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          //item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\""+audioIndex+"\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+
+          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.四縣客家語 + "<rt>" + line.四縣客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.四縣華語詞義 + "</td>";
+          
+          if (line.四縣例句 && line.四縣例句.trim() !== "") {
+            item.innerHTML += "<td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          } else {
+            //item.innerHTML += "<td></td>"; // 如果 line.四縣例句 為空，則產生一個空的 td
+            item.innerHTML += "<td><audio class='media' data-skip='true' controls='controls' preload='none' > <source src='invalid-audio.mp3' type='audio/mpeg'></audio></td>"; // 產生無效的 audio 元素
+          }
+
           table.appendChild(item);
         } else {continue;}
       }
@@ -139,7 +189,7 @@ function generate(content) {
       //document.addEventListener('DOMContentLoaded', function() {
         var progress = document.createElement("span");
         const bookmarkData = JSON.parse(localStorage.getItem('bookmark'));
-        if (bookmarkData) {
+        if (bookmarkData && bookmarkData.cat == cat) {
           progress.innerHTML = "，可跳到已存進度第 <a href=\"#" + bookmarkData.rowId + "\">" + bookmarkData.rowId + "</a> 行（" + bookmarkData.percentage + "%）";
         }
         title.appendChild(progress);
@@ -179,7 +229,7 @@ function generate(content) {
             const rowId = rowButton.dataset.rowId;
             //const rowId = this.closest('button').dataset.rowId;
             let rowNum = rowId.replace(/^0+/,'');
-            let percentage = rowNum / (audioElements.length/2) * 100;
+            let percentage = rowNum / (bookmarkButtons.length) * 100;
             let percentageFixed = percentage.toFixed(2);
 
             localStorage.setItem("bookmark", JSON.stringify({
@@ -243,6 +293,11 @@ function generate(content) {
       
         function playAudio(index) {
           if (index >= audioElements.length) {
+            
+            // 播放結束語音
+            const endAudio = new Audio('endOfPlay.mp3'); // 替換成您要使用的自由語音 URL
+            endAudio.play();
+
             currentAudioIndex = 0;
             isPlaying = false;
             isPaused = false;
@@ -252,7 +307,29 @@ function generate(content) {
           }
       
           currentAudio = audioElements[index];
+
+          if (currentAudio.dataset.skip === 'true') { // 檢查 data-skip 屬性
+            //console.warn(`音訊 ${currentAudio.src} 無效，跳過。`);
+            currentAudioIndex++;
+            playAudio(currentAudioIndex);
+            return;
+          }
+          
+          //currentAudio.addEventListener('error', handleAudioError, { once: true }); // 新增錯誤監聽器，發現無法克服 CORS 問題
+          //currentAudio.addEventListener('play', handleAudioPlay); // 新增 play 事件監聽器，功成身退
+
+
           currentAudio.play();
+          /*checkAudioStatus(currentAudio.src).then(canPlay => {
+            if (canPlay) {
+              currentAudio.play();
+            } else {
+              console.error(`音訊 ${currentAudio.src} 無法存取，跳過。`);
+              currentAudioIndex++;
+              playAudio(currentAudioIndex);
+            }
+          });*/
+          
           currentAudio.addEventListener('ended', handleAudioEnded, { once: true });
           currentAudio.parentElement.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -260,6 +337,20 @@ function generate(content) {
         function handleAudioEnded() {
           currentAudioIndex++; // 更新索引
           playAudio(currentAudioIndex);
+        }
+
+        function handleAudioError() {
+          //console.error(`音訊 ${currentAudio.src} 載入失敗，跳過。`);
+          console.log('錯誤事件：', event);
+          console.log('錯誤碼：', currentAudio.error.code);
+          console.log('錯誤訊息：', currentAudio.error.message);
+          currentAudioIndex++;
+          playAudio(currentAudioIndex);
+        }
+        
+        function handleAudioPlay(event) {
+          //console.log(`音訊 ${currentAudio.src} 開始播放。`);
+          console.log('播放事件：', event);
         }
       
         playAllButton.addEventListener('click', function() {
@@ -292,6 +383,8 @@ function generate(content) {
               currentAudio.pause();
               currentAudio.currentTime = 0;
               currentAudio.removeEventListener('ended', handleAudioEnded);
+              //currentAudio.removeEventListener('error', handleAudioError); // 移除錯誤監聽器
+              //currentAudio.removeEventListener('play', handleAudioPlay); // 移除 play 事件監聽器
             }
             currentAudioIndex = 0;
             isPlaying = false;

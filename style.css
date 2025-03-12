@@ -1,3 +1,13 @@
+@font-face {
+  font-family: '源石黑體';
+  src: local('源石黑體');
+}
+@font-face {
+  font-family: '源石黑體';
+  src: local('GenSekiGothic TW R');
+  font-weight: 700 !important;
+}
+
 /* radio button style from <https: //webspe.net/tools/en/radio-button/> */
 .radioItem {
   display: inline-flex;
@@ -38,20 +48,23 @@
 }
 
 /* Mine */
-ruby {
-  font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo !important;
-  font-size: 1.5em;
-  font-weight: 700;
+#generated td:nth-of-type(2) {
+  ruby {
+    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo !important;
+    font-size: 1.5em;
+    font-weight: 700;
+  }
+  rt {
+    font-size: 1em;
+    font-family: 'jf金萱那提2.0' !important;
+    margin-bottom: 0.3em;
+  }
 }
-rt {
-  font-size: 1em;
-  font-family: 'jf金萱那提2.0' !important;
-  margin-bottom: 0.3em;
-}
+
 body {
   font-size: 20px;
 }
-body * {
+body, body * {
   font-family: Iansui, tauhu-oo, serif;
   line-height: 1.8em;
   color: #245d48;
@@ -72,7 +85,7 @@ a {color: #678c3f;}
 }
 audio {max-width: 5em;}
 .no {font-family: 'Operator Mono';}
-.sentence {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
+.sentence, .sentence * {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
 #title {position: sticky;top: 10px;background: rgba(103,
   140,
   63,0.5);backdrop-filter: blur(5px); z-index: 10;}
@@ -126,3 +139,5 @@ audio {max-width: 5em;}
   cursor: pointer;
 }
 button#playAllBtn {display: none;}
+
+audio[data-skip="true"] {display: none;}
