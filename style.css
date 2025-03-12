@@ -54,10 +54,28 @@
     font-size: 1.5em;
     font-weight: 700;
   }
-  rt {
+  rt, ruby.sandhi {
     font-size: 1em;
     font-family: 'jf金萱那提2.0' !important;
     margin-bottom: 0.3em;
+  }
+  ruby.sandhi {
+    font-size: revert !important;
+    /* font-family: initial !important; */
+    
+    rt {
+      font-size: initial !important;
+      color: inherit;
+    }
+  }
+  ruby.sandhi.高降變 {
+    color: red;
+  }
+  ruby.sandhi.中平變 {
+    color: orangered;
+  }
+  ruby.sandhi.低升變 {
+    color: blue;
   }
 }
 
@@ -141,3 +159,4 @@ audio {max-width: 5em;}
 button#playAllBtn {display: none;}
 
 audio[data-skip="true"] {display: none;}
+

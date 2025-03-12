@@ -69,7 +69,7 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 
   /* GHSRobert + Gemini */
   const rows = str.split('\n');
-  const headers = rows[0].split(',');
+  const headers = rows[0].replace(/(四縣|海陸|大埔|饒平|詔安)/g,'').split(',');
   const data = [];
 
   // 將每一列轉換成 JavaScript 物件
@@ -90,35 +90,56 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 
 function generate(content) {
   console.log(content.name); // 依 Gemini 說的，把 content 改為物件，就可以取得名稱了
-  //console.log(content.content);
+  console.log(content.content);
 
   var mediaKey;
+  var fullLvlName;
   switch (content.name) {
     case "四基":
       mediaKey = "5/si/si";
+      fullLvlName = "四縣基礎";
       break;
     case "四初":
       mediaKey = "1/si/si";
+      fullLvlName = "四縣初級";
       break;
     case "四中":
       mediaKey = "2/si/1si";
+      fullLvlName = "四縣中級";
       break;
     case "四中高":
       mediaKey = "3/si/2si";
+      fullLvlName = "四縣中高";
+      break;
+    case "大基":
+      mediaKey = "5/da/da";
+      fullLvlName = "大埔基礎";
+      break;
+    case "大初":
+      mediaKey = "1/da/da";
+      fullLvlName = "大埔初級";
+      break;
+    case "大中":
+      mediaKey = "2/da/1da";
+      fullLvlName = "大埔中級";
+      break;
+    case "大中高":
+      mediaKey = "3/da/2da";
+      fullLvlName = "大埔中高";
       break;
   }
 
   var contentContainer = document.getElementById("generated");
   contentContainer.innerHTML = "";
 
-  var title = document.createElement("h1");
-  title.innerHTML = "現在學習的是" + content.name;
+  var title = document.createElement("h2");
+  title.innerHTML = "現在學習的是" + fullLvlName;
   contentContainer.appendChild(title);
   
   // var cat = "人體與醫療";
   
   var arr = csvToArray(content.content);
-  //console.log(arr);
+  console.log(arr);
   //arr = arr.replace(/\r/g,"");
   
   // Select all inputs with name="category"
@@ -131,8 +152,8 @@ function generate(content) {
       console.log(cat);
       contentContainer.innerHTML = "";
       
-      var title = document.createElement("h1");
-      title.innerHTML = "現在學習的是"+content.name+"的"+cat;
+      var title = document.createElement("h2");
+      title.innerHTML = "現在學習的是"+fullLvlName+"的"+cat;
       contentContainer.appendChild(title);
       title.setAttribute("id","title");
 
@@ -144,15 +165,15 @@ function generate(content) {
 //        if (line.分類 === cat) {
         if (line.分類.includes(cat) == true) { // 因為基初和中高的類別順序不同，所以 radio button 不再加編號，改為用 includes 來比對
     
-          //var 句 = data[i].四縣例句.replace(/"/g,'').replace(/\\n/g,'<br>');
-          //var 譯 = data[i].四縣翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
+          //var 句 = data[i].例句.replace(/"/g,'').replace(/\\n/g,'<br>');
+          //var 譯 = data[i].翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
           /* var item = document.createElement("tr");
           var no = document.createElement("td");
           var 句 = document.createElement("td");
           var 譯 = document.createElement("td");
           no.innerHTML = data[i].編號;
-          句.innerHTML = data[i].四縣例句.replace(/"/g,'').replace(/\\n/g,'<br>');
-          譯.innerHTML = data[i].四縣翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
+          句.innerHTML = data[i].例句.replace(/"/g,'').replace(/\\n/g,'<br>');
+          譯.innerHTML = data[i].翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
           item.appendChild(no);
           item.appendChild(句);
           item.appendChild(譯);
@@ -167,14 +188,14 @@ function generate(content) {
           let audioIndex = (no[1].replace(/^0+/,'') - 1) * 2;
           var item = document.createElement("tr");
           //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-          //item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\""+audioIndex+"\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>"+line.四縣客家語+"<rt>"+line.四縣客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.四縣華語詞義+"</td><td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          //item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\""+audioIndex+"\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>"+line.客家語+"<rt>"+line.客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.華語詞義+"</td><td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
 
-          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.四縣客家語 + "<rt>" + line.四縣客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.四縣華語詞義 + "</td>";
+          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義 + "</td>";
           
-          if (line.四縣例句 && line.四縣例句.trim() !== "") {
-            item.innerHTML += "<td><span class='sentence'>" + line.四縣例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.四縣翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          if (line.例句 && line.例句.trim() !== "") {
+            item.innerHTML += "<td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
           } else {
-            //item.innerHTML += "<td></td>"; // 如果 line.四縣例句 為空，則產生一個空的 td
+            //item.innerHTML += "<td></td>"; // 如果 line.例句 為空，則產生一個空的 td
             item.innerHTML += "<td><audio class='media' data-skip='true' controls='controls' preload='none' > <source src='invalid-audio.mp3' type='audio/mpeg'></audio></td>"; // 產生無效的 audio 元素
           }
 
@@ -184,7 +205,13 @@ function generate(content) {
       table.setAttribute("width","100%");
       contentContainer.appendChild(table);
 
-      
+      // 執行標示大埔變調
+      if (content && content.name && content.name.includes('大')) {
+        大埔高降變調();
+        大埔中遇低升();
+        大埔低升異化();
+      }
+
       // 嘗試寫入學習進度，Gemini 教的
       //document.addEventListener('DOMContentLoaded', function() {
         var progress = document.createElement("span");
@@ -194,7 +221,7 @@ function generate(content) {
         }
         title.appendChild(progress);
         const bookmarkButtons = document.querySelectorAll('.bookmarkBtn');
-        const a = content.name; // 變數 a 的值
+        const a = fullLvlName; // 變數 a 的值
         const b = cat;
         
         bookmarkButtons.forEach(button => {
@@ -418,7 +445,7 @@ function generate(content) {
 /*      reader.readAsText(file);
     }
   });*/
-  //contentContainer.innerHTML = arr[3].四縣翻譯;
+  //contentContainer.innerHTML = arr[3].翻譯;
 }
 
 /* 最頂端一開始讀取進度 */
@@ -449,3 +476,152 @@ document.addEventListener('DOMContentLoaded', function() {
     document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
   });
 });
+
+/* 標示大埔變調 */
+function 大埔高降變調() {
+  const specialChars = ['à', 'è', 'ì', 'ò', 'ù'];
+  const rtElements = document.querySelectorAll('rt');
+
+  rtElements.forEach(rt => {
+    let text = rt.textContent;
+    let words = text.split(/(\s+)/);
+    let modifiedWords = [];
+
+    for (let i = 0; i < words.length; i++) {
+      if (words[i].length > 0 && words[i].match(/[\u00E0\u00E8\u00EC\u00F2\u00F9]/)) { // 若前字為 à è ì ò ù
+        // 檢查下一個單字是否也包含 à è ì ò ù 或 â ê î ô û
+        if (i + 2 < words.length && words[i + 2].match(/[\u00E0\u00E8\u00EC\u00F2\u00F9\u00E2\u00EA\u00EE\u00F4\u00FB]/)) {
+          // 檢查 A 單字是否含有右括號，或 B 單字是否含有左括號
+          if (words[i].includes(')') || words[i + 2].includes('(')) {
+            // 如果含有括號，則直接加入 A 單字
+            modifiedWords.push(words[i]);
+          } else {
+            // 如果沒有括號，則將 A 單字放在 <ruby> 裡
+            let rubyElement = document.createElement('ruby');
+            rubyElement.className = 'sandhi';
+            rubyElement.classList.add("高降變");
+            rubyElement.textContent = words[i];
+            let rtElement = document.createElement('rt');
+            rtElement.textContent = '55';
+            rubyElement.appendChild(rtElement);
+            modifiedWords.push(rubyElement.outerHTML);
+          }
+        } else {
+          // 如果下一個單字不包含特殊字元，則直接加入 A 單字
+          modifiedWords.push(words[i]);
+        }
+      } else {
+        modifiedWords.push(words[i]);
+      }
+    }
+
+    let newText = modifiedWords.join('');
+
+    if (newText !== text) {
+      let tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newText;
+      rt.innerHTML = ''; // 清空 rt 內容
+      while (tempDiv.firstChild) {
+        rt.appendChild(tempDiv.firstChild);
+      }
+    }
+  });
+}
+function 大埔中遇低升() {
+  const specialChars = ['à', 'è', 'ì', 'ò', 'ù'];
+  const rtElements = document.querySelectorAll('rt');
+
+  rtElements.forEach(rt => {
+    let text = rt.textContent;
+    let words = text.split(/(\s+)/);
+    let modifiedWords = [];
+
+    for (let i = 0; i < words.length; i++) {
+      if (words[i].length > 0 && words[i].match(/[\u0101\u0113\u012B\u014D\u016B]/)) { // 若前字為 ā ē ī ō ū
+        // 檢查下一個單字是否也包含 ǎ ě ǐ ǒ ǔ 或 â ê î ô û
+        if (i + 2 < words.length && words[i + 2].match(/[\u01CE\u011B\u01D0\u01D2\u01D4\u00E2\u00EA\u00EE\u00F4\u00FB]/)) {
+          // 檢查 A 單字是否含有右括號，或 B 單字是否含有左括號
+          if (words[i].includes(')') || words[i + 2].includes('(')) {
+            // 如果含有括號，則直接加入 A 單字
+            modifiedWords.push(words[i]);
+          } else {
+            // 如果沒有括號，則將 A 單字放在 <ruby> 裡
+            let rubyElement = document.createElement('ruby');
+            rubyElement.className = 'sandhi';
+            rubyElement.classList.add("中平變");
+            rubyElement.textContent = words[i];
+            let rtElement = document.createElement('rt');
+            rtElement.textContent = '35';
+            rubyElement.appendChild(rtElement);
+            modifiedWords.push(rubyElement.outerHTML);
+          }
+        } else {
+          // 如果下一個單字不包含特殊字元，則直接加入 A 單字
+          modifiedWords.push(words[i]);
+        }
+      } else {
+        modifiedWords.push(words[i]);
+      }
+    }
+
+    let newText = modifiedWords.join('');
+
+    if (newText !== text) {
+      let tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newText;
+      rt.innerHTML = ''; // 清空 rt 內容
+      while (tempDiv.firstChild) {
+        rt.appendChild(tempDiv.firstChild);
+      }
+    }
+  });
+}
+function 大埔低升異化() {
+  const specialChars = ['à', 'è', 'ì', 'ò', 'ù'];
+  const rtElements = document.querySelectorAll('rt');
+
+  rtElements.forEach(rt => {
+    let text = rt.textContent;
+    let words = text.split(/(\s+)/);
+    let modifiedWords = [];
+
+    for (let i = 0; i < words.length; i++) {
+      if (words[i].length > 0 && words[i].match(/[\u01CE\u011B\u01D0\u01D2\u01D4]/)) { // 若前字為 ǎ ě ǐ ǒ ǔ
+        // 檢查下一個單字是否也包含 ǎ ě ǐ ǒ ǔ
+        if (i + 2 < words.length && words[i + 2].match(/[\u01CE\u011B\u01D0\u01D2\u01D4]/)) {
+          // 檢查 A 單字是否含有右括號，或 B 單字是否含有左括號
+          if (words[i].includes(')') || words[i + 2].includes('(')) {
+            // 如果含有括號，則直接加入 A 單字
+            modifiedWords.push(words[i]);
+          } else {
+            // 如果沒有括號，則將 A 單字放在 <ruby> 裡
+            let rubyElement = document.createElement('ruby');
+            rubyElement.className = 'sandhi';
+            rubyElement.classList.add('低升變');
+            rubyElement.textContent = words[i];
+            let rtElement = document.createElement('rt');
+            rtElement.textContent = '33';
+            rubyElement.appendChild(rtElement);
+            modifiedWords.push(rubyElement.outerHTML);
+          }
+        } else {
+          // 如果下一個單字不包含特殊字元，則直接加入 A 單字
+          modifiedWords.push(words[i]);
+        }
+      } else {
+        modifiedWords.push(words[i]);
+      }
+    }
+
+    let newText = modifiedWords.join('');
+
+    if (newText !== text) {
+      let tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newText;
+      rt.innerHTML = ''; // 清空 rt 內容
+      while (tempDiv.firstChild) {
+        rt.appendChild(tempDiv.firstChild);
+      }
+    }
+  });
+}
