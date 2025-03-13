@@ -111,6 +111,22 @@ function generate(content) {
       mediaKey = "3/si/2si";
       fullLvlName = "四縣中高";
       break;
+    case "海基":
+      mediaKey = "5/ha/ha";
+      fullLvlName = "海陸基礎";
+      break;
+    case "海初":
+      mediaKey = "1/ha/ha";
+      fullLvlName = "海陸初級";
+      break;
+    case "海中":
+      mediaKey = "2/ha/1ha";
+      fullLvlName = "海陸中級";
+      break;
+    case "海中高":
+      mediaKey = "3/ha/2ha";
+      fullLvlName = "海陸中高";
+      break;
     case "大基":
       mediaKey = "5/da/da";
       fullLvlName = "大埔基礎";
