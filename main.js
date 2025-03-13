@@ -90,7 +90,7 @@ function csvToArray(str, delimiter = ",") { // https://github.com/codewithnathan
 
 function generate(content) {
   console.log(content.name); // 依 Gemini 說的，把 content 改為物件，就可以取得名稱了
-  console.log(content.content);
+  //console.log(content.content);
 
   var mediaKey;
   var fullLvlName;
@@ -139,7 +139,7 @@ function generate(content) {
   // var cat = "人體與醫療";
   
   var arr = csvToArray(content.content);
-  console.log(arr);
+  //console.log(arr);
   //arr = arr.replace(/\r/g,"");
   
   // Select all inputs with name="category"
@@ -163,7 +163,7 @@ function generate(content) {
       table.innerHTML = "";
       for (const line of arr) {
 //        if (line.分類 === cat) {
-        if (line.分類.includes(cat) == true) { // 因為基初和中高的類別順序不同，所以 radio button 不再加編號，改為用 includes 來比對
+        if (line.分類 && line.分類.includes(cat) == true) { // 因為基初和中高的類別順序不同，所以 radio button 不再加編號，改為用 includes 來比對
     
           //var 句 = data[i].例句.replace(/"/g,'').replace(/\\n/g,'<br>');
           //var 譯 = data[i].翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
@@ -187,10 +187,10 @@ function generate(content) {
           if (no[1] <= 99) {no[1] = "0"+no[1];}
           let audioIndex = (no[1].replace(/^0+/,'') - 1) * 2;
           var item = document.createElement("tr");
-          //item.innerHTML = "<td>"+no[0]+"-"+no[1]+line.分類+"</td>";
-          //item.innerHTML = "<a name=\""+no[1]+"\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\""+no[1]+"\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\""+audioIndex+"\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>"+line.客家語+"<rt>"+line.客語標音+"</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] + ".mp3' type='audio/mpeg'></audio><br>"+line.華語詞義+"</td><td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0]+"-"+no[1] +"s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
 
-          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義 + "</td>";
+          var notes = line.備註 ? `<p class="notes">（${line.備註}）</p>` : '';
+
+          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義 + notes + "</td>";
           
           if (line.例句 && line.例句.trim() !== "") {
             item.innerHTML += "<td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";

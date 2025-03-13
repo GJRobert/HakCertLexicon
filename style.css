@@ -104,9 +104,9 @@ a {color: #678c3f;}
 audio {max-width: 5em;}
 .no {font-family: 'Operator Mono';}
 .sentence, .sentence * {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
-#title {position: sticky;top: 10px;background: rgba(103,
-  140,
-  63,0.5);backdrop-filter: blur(5px); z-index: 10;}
+#title {position: sticky;top: 10px;background: rgba(170,
+  150,
+  183,0.5);backdrop-filter: blur(5px); z-index: 10;}
 .bookmarkBtn {
   background: none;
   border: none;
@@ -160,3 +160,12 @@ button#playAllBtn {display: none;}
 
 audio[data-skip="true"] {display: none;}
 
+.notes {
+  font-size: 0.8em;
+  font-family: 'Linux Libertine',
+    'Huiwen-Fangsong',
+    serif;
+  background-color: #aa96b7;
+  padding: 0.2em;
+  border-radius: 0.5em;
+}
