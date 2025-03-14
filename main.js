@@ -206,7 +206,7 @@ function generate(content) {
 
           var notes = line.備註 ? `<p class="notes">（${line.備註}）</p>` : '';
 
-          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\"><i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義 + notes + "</td>";
+          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\">從此列開始<br>自動播放全部 ♥ <i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義 + notes + "</td>";
           
           if (line.例句 && line.例句.trim() !== "") {
             item.innerHTML += "<td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
@@ -223,7 +223,7 @@ function generate(content) {
 
       // 執行標示大埔變調
       if (content && content.name && content.name.includes('大')) {
-        大埔高降變調();
+        大埔高降異化();
         大埔中遇低升();
         大埔低升異化();
       }
@@ -494,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /* 標示大埔變調 */
-function 大埔高降變調() {
+function 大埔高降異化() {
   const specialChars = ['à', 'è', 'ì', 'ò', 'ù'];
   const rtElements = document.querySelectorAll('rt');
 
