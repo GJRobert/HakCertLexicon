@@ -143,6 +143,38 @@ function generate(content) {
       mediaKey = "3/da/2da";
       fullLvlName = "大埔中高";
       break;
+    case "平基":
+      mediaKey = "5/rh/rh";
+      fullLvlName = "饒平基礎";
+      break;
+    case "平初":
+      mediaKey = "1/rh/rh";
+      fullLvlName = "饒平初級";
+      break;
+    case "平中":
+      mediaKey = "2/rh/1rh";
+      fullLvlName = "饒平中級";
+      break;
+    case "平中高":
+      mediaKey = "3/rh/2rh";
+      fullLvlName = "饒平中高";
+      break;
+    case "安基":
+      mediaKey = "5/zh/zh";
+      fullLvlName = "詔安基礎";
+      break;
+    case "安初":
+      mediaKey = "1/zh/zh";
+      fullLvlName = "詔安初級";
+      break;
+    case "安中":
+      mediaKey = "2/zh/1zh";
+      fullLvlName = "詔安中級";
+      break;
+    case "安中高":
+      mediaKey = "3/zh/2zh";
+      fullLvlName = "詔安中高";
+      break;
   }
 
   var contentContainer = document.getElementById("generated");
