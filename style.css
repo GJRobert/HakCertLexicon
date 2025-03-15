@@ -218,3 +218,12 @@ tr#nowPlaying {
 tr#nowPlaying td:first-of-type {
   background-color: var(--iMazinGrace-1);
 }
+
+@media (pointer: coarse) {
+  /* 觸控裝置的 CSS 樣式 */
+  @import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
+
+  body * {
+    font-family: Iansui, cursive;
+  }
+}
