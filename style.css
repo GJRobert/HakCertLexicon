@@ -224,7 +224,7 @@ tr#nowPlaying td:first-of-type {
   @import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
 
   body * {
-    font-family: Iansui, cursive !important;
+    font-family: Iansui, cursive !important; /* 到 important 了仍沒用 */
   }
 }
 
@@ -233,6 +233,6 @@ tr#nowPlaying td:first-of-type {
   @import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
 
   body * {
-    font-family: Iansui, cursive;
+    font-family: Iansui, cursive !important;
   }
 }
