@@ -165,6 +165,7 @@ audio[data-skip="true"] {display: none;}
   font-family: 'Linux Libertine',
     'Huiwen-Fangsong',
     serif;
+  color: white;
   background-color: #aa96b7;
   padding: 0.2em;
   border-radius: 0.5em;

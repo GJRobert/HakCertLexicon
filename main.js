@@ -209,6 +209,7 @@ function generate(content) {
 
       var table = document.createElement("table");
       table.innerHTML = "";
+      let rowIndex = 0;
       for (const line of arr) {
 //        if (line.分類 === cat) {
         if (line.分類 && line.分類.includes(cat) == true) { // 因為基初和中高的類別順序不同，所以 radio button 不再加編號，改為用 includes 來比對
@@ -233,7 +234,8 @@ function generate(content) {
           if (content.name.includes("初") == true) {no[0] = "0"+no[0];} // 初很煩檔名的類別號碼前面還要再加 0，神經喔
           if (no[1] <= 9) {no[1] = "0"+no[1];}
           if (no[1] <= 99) {no[1] = "0"+no[1];}
-          let audioIndex = (no[1].replace(/^0+/,'') - 1) * 2;
+          let audioIndex = rowIndex*2;
+          rowIndex++;
           var item = document.createElement("tr");
 
           var notes = line.備註 ? `<p class="notes">（${line.備註}）</p>` : '';
