@@ -240,7 +240,7 @@ function generate(content) {
 
           var notes = line.備註 ? `<p class="notes">（${line.備註}）</p>` : '';
 
-          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\">從此列開始<br>自動播放全部 ♥ <i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義 + notes + "</td>";
+          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\">從此列開始<br>自動播放全部 ♥ <i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義.replace(/"/g,"") + notes + "</td>";
           
           if (line.例句 && line.例句.trim() !== "") {
             item.innerHTML += "<td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
@@ -380,6 +380,16 @@ function generate(content) {
             isPaused = false;
             currentAudio = null;
             pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+            pauseResumeButton.classList.remove("ongoing");
+            pauseResumeButton.classList.add("ended");
+            stopButton.classList.remove("ongoing");
+            stopButton.classList.add("ended");
+            playFromRowButtons.forEach(element => {
+              element.classList.remove('ongoing');
+              element.classList.add("playable");
+            });
+            // 移除 #nowPlaying ID
+            removeNowPlaying();
             return;
           }
       
@@ -408,6 +418,10 @@ function generate(content) {
           });*/
           
           currentAudio.addEventListener('ended', handleAudioEnded, { once: true });
+
+          // 新增 #nowPlaying ID
+          addNowPlaying(currentAudio.parentElement.parentElement);
+
           currentAudio.parentElement.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       
@@ -468,6 +482,16 @@ function generate(content) {
             isPaused = false;
             currentAudio = null;
             pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+            pauseResumeButton.classList.remove("ongoing");
+            pauseResumeButton.classList.add("ended");
+            stopButton.classList.remove("ongoing");
+            stopButton.classList.add("ended");
+            playFromRowButtons.forEach(element => {
+              element.classList.remove('ongoing');
+              element.classList.add("playable");
+            });
+            // 移除 #nowPlaying ID
+            removeNowPlaying();
           }
         });
 
@@ -479,11 +503,32 @@ function generate(content) {
               isPaused = false;
               playAudio(currentAudioIndex);
               pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+              pauseResumeButton.classList = "";
+              pauseResumeButton.classList.add("ongoing");
+              stopButton.classList = "";
+              stopButton.classList.add("ongoing");
+              playFromRowButtons.forEach(element => {
+                element.classList.add('ongoing');
+              });
             }
           });
         });
       //});
     })
+
+    // 新增函式：新增 #nowPlaying ID
+    function addNowPlaying(element) {
+      removeNowPlaying(); // 移除之前的 #nowPlaying ID
+      element.id = 'nowPlaying';
+    }
+    
+    // 新增函式：移除 #nowPlaying ID
+    function removeNowPlaying() {
+      const nowPlaying = document.getElementById('nowPlaying');
+      if (nowPlaying) {
+        nowPlaying.removeAttribute('id');
+      }
+    }
     //table.innerHTML = "";
   });
 

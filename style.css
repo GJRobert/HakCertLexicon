@@ -79,13 +79,17 @@
   }
 }
 
+:root {
+  --main-text-color: #245d48;
+  --iMazinGrace-1: #aa96b7;
+}
 body {
   font-size: 20px;
 }
 body, body * {
   font-family: Iansui, tauhu-oo, serif;
   line-height: 1.8em;
-  color: #245d48;
+  color: var(--main-text-color);
 }
 /*table {
   table-layout: fixed;
@@ -113,7 +117,7 @@ audio {max-width: 5em;}
   cursor: pointer;
 }
 .bookmarkBtn i {
-  color: #aa96b7 !important;
+  color: var(--iMazinGrace-1) !important;
 }
 #generated td:nth-of-type(2) {
   text-align: center;
@@ -150,11 +154,27 @@ audio {max-width: 5em;}
   z-index: 99;
 }*//* 改成放 title？ */
 #audioControls button {
-  background: none;
   border: none;
   font-size: 24px;
   margin: 0 5px;
+}
+#audioControls button i, button.playFromThisRow i {
   cursor: pointer;
+  background: green;
+  color: wheat;
+  box-shadow: 2px 2px purple;
+  border-radius: 1em;
+  padding: 0.5em;
+}
+#audioControls button.playable i, button.playFromThisRow.playable i {
+  background-color: green !important;
+}
+#audioControls button.ongoing i, button.playFromThisRow.ongoing i {
+  background-color: yellow !important;
+  color: var(--main-text-color);
+}
+#audioControls button.ended i, button.playFromThisRow.ended i {
+  background-color: red !important;
 }
 button#playAllBtn {display: none;}
 
@@ -169,4 +189,32 @@ audio[data-skip="true"] {display: none;}
   background-color: #aa96b7;
   padding: 0.2em;
   border-radius: 0.5em;
+}
+
+.dialect {
+  padding: 0.3em 1em;
+  display: inline-block;
+  color: black;
+  a {
+    color: white;
+  }
+}
+.四縣 {
+  background-color: #678D3F;
+  color: black;
+  a {
+    color: white;
+  }
+}
+.海陸 {background-color: #76AD67;}
+.大埔 {background-color: #5898A9;}
+.饒平 {background-color: #834FA1;}
+.詔安 {background-color: #974A47;}
+
+tr#nowPlaying {
+  text-shadow: 0.2em 0.2em 0.3em var(--iMazinGrace-1);
+  position: relative; /* 必須設定，以讓偽元素相對於 tr 定位 */
+}
+tr#nowPlaying td:first-of-type {
+  background-color: var(--iMazinGrace-1);
 }
