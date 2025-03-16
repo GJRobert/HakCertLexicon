@@ -52,7 +52,7 @@
 /* Mine */
 #generated td:nth-of-type(2) {
   ruby {
-    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, sans-serif !important;
+    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, Iansui, sans-serif !important;
     font-size: 1.5em;
     font-weight: 700;
   }
