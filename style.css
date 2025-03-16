@@ -52,7 +52,7 @@
 /* Mine */
 #generated td:nth-of-type(2) {
   ruby {
-    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo !important;
+    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, sans-serif !important;
     font-size: 1.5em;
     font-weight: 700;
   }
@@ -220,22 +220,4 @@ tr#nowPlaying {
 }
 tr#nowPlaying td:first-of-type {
   background-color: var(--iMazinGrace-1);
-}
-
-@media (pointer: coarse) { /* 像形沒用 */
-  /* 觸控裝置的 CSS 樣式 */
-  @import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
-
-  body * {
-    font-family: Iansui, cursive !important; /* 到 important 了仍沒用 */
-  }
-}
-
-@media (max-width: 767px) {
-  /* 手機裝置的 CSS 樣式 */
-  @import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
-
-  body * {
-    font-family: Iansui, cursive !important;
-  }
 }
