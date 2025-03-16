@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
+
 @font-face {
   font-family: '源石黑體';
   src: local('源石黑體');
@@ -212,7 +214,8 @@ audio[data-skip="true"] {display: none;}
 .詔安 {background-color: #974A47;}
 
 tr#nowPlaying {
-  text-shadow: 0.2em 0.2em 0.3em var(--iMazinGrace-1);
+  /*text-shadow: 0.2em 0.2em 0.3em var(--iMazinGrace-1);*/
+  text-shadow: 0.05em 0.05em 0px #FFFFFF, 0.1em 0.1em 0px rgba(0, 0, 0, 0.15);
   position: relative; /* 必須設定，以讓偽元素相對於 tr 定位 */
 }
 tr#nowPlaying td:first-of-type {

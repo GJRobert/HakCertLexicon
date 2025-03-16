@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Google Font Debug</title>
+<script src="https://cdn.jsdelivr.net/npm/fontfaceobserver@2.1.0/fontfaceobserver.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
+  body {
+    font-family: Iansui, sans-serif;
+  }
+</style>
+</head>
+<body>
+<h1>Hello, World!</h1>
+<script>
+const font = new FontFaceObserver('Iansui', {
+  weight: 400,
+  style: 'normal',
+});
+
+font.load().then(function () {
+  console.log('Font is available');
+  displayDebugMessage('Google Font "Iansui" loaded successfully.');
+}).catch(function () {
+  console.log('Font is not available');
+  displayDebugMessage('Google Font "Iansui" failed to load.');
+});
+
+function displayDebugMessage(message) {
+  const debugDiv = document.getElementById('debug');
+  if (debugDiv) {
+    debugDiv.textContent = message;
+  } else {
+    const newDebugDiv = document.createElement('div');
+    newDebugDiv.id = 'debug';
+    newDebugDiv.textContent = message;
+    document.body.appendChild(newDebugDiv);
+  }
+}
+</script>
+</body>
+</html>
