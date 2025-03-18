@@ -147,6 +147,7 @@ audio {max-width: 5em;}
 #backToTopBtn:hover {
   background-color: rgba(0, 0, 0, 0.8); /* 滑鼠懸停時加深背景顏色 */
 }
+#backToTopBtn i {color: white;}
 
 /* 播放全部 */
 /*#audioControls {
@@ -159,13 +160,14 @@ audio {max-width: 5em;}
   border: none;
   font-size: 24px;
   margin: 0 5px;
+  background: none;
 }
 #audioControls button i, button.playFromThisRow i {
   cursor: pointer;
   background: green;
   color: wheat;
   box-shadow: 2px 2px purple;
-  border-radius: 1em;
+  border-radius: 0.3em;
   padding: 0.5em;
 }
 #audioControls button.playable i, button.playFromThisRow.playable i {

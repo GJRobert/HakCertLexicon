@@ -92,90 +92,79 @@ function generate(content) {
   console.log(content.name); // 依 Gemini 說的，把 content 改為物件，就可以取得名稱了
   //console.log(content.content);
 
-  var mediaKey;
+  //分析腔別級別
+  let 腔 = "";
+  let 級 = "";
+  腔 = content.name.substring(0,1);
+  級 = content.name.substring(1);
+  例外音檔 = eval(級+"例外音檔");
+
+  var 詞目錄;
+  var 句目錄;
   var fullLvlName;
-  switch (content.name) {
-    case "四基":
-      mediaKey = "5/si/si";
-      fullLvlName = "四縣基礎";
+  const generalMediaYr = "112";
+  let mediaYr = generalMediaYr;
+  var mediaNo;
+  var pre112Insertion = "";
+  var 目錄級;
+  var 目錄另級;
+  var 句目錄級 = "";
+  var 檔級 = "";
+  var 檔腔;
+  var 中中高插值 = ""; // 應該用不到了
+  var 腔名;
+  var 級名;
+
+  switch (腔) {
+    case "四":
+      檔腔 = "si";
+      腔名 = "四縣";
       break;
-    case "四初":
-      mediaKey = "1/si/si";
-      fullLvlName = "四縣初級";
+    case "海":
+      檔腔 = "ha";
+      腔名 = "海陸";
       break;
-    case "四中":
-      mediaKey = "2/si/1si";
-      fullLvlName = "四縣中級";
+    case "大":
+      檔腔 = "da";
+      腔名 = "大埔";
       break;
-    case "四中高":
-      mediaKey = "3/si/2si";
-      fullLvlName = "四縣中高";
+    case "平":
+      檔腔 = "rh";
+      腔名 = "饒平";
       break;
-    case "海基":
-      mediaKey = "5/ha/ha";
-      fullLvlName = "海陸基礎";
+    case "安":
+      檔腔 = "zh";
+      腔名 = "詔安";
       break;
-    case "海初":
-      mediaKey = "1/ha/ha";
-      fullLvlName = "海陸初級";
-      break;
-    case "海中":
-      mediaKey = "2/ha/1ha";
-      fullLvlName = "海陸中級";
-      break;
-    case "海中高":
-      mediaKey = "3/ha/2ha";
-      fullLvlName = "海陸中高";
-      break;
-    case "大基":
-      mediaKey = "5/da/da";
-      fullLvlName = "大埔基礎";
-      break;
-    case "大初":
-      mediaKey = "1/da/da";
-      fullLvlName = "大埔初級";
-      break;
-    case "大中":
-      mediaKey = "2/da/1da";
-      fullLvlName = "大埔中級";
-      break;
-    case "大中高":
-      mediaKey = "3/da/2da";
-      fullLvlName = "大埔中高";
-      break;
-    case "平基":
-      mediaKey = "5/rh/rh";
-      fullLvlName = "饒平基礎";
-      break;
-    case "平初":
-      mediaKey = "1/rh/rh";
-      fullLvlName = "饒平初級";
-      break;
-    case "平中":
-      mediaKey = "2/rh/1rh";
-      fullLvlName = "饒平中級";
-      break;
-    case "平中高":
-      mediaKey = "3/rh/2rh";
-      fullLvlName = "饒平中高";
-      break;
-    case "安基":
-      mediaKey = "5/zh/zh";
-      fullLvlName = "詔安基礎";
-      break;
-    case "安初":
-      mediaKey = "1/zh/zh";
-      fullLvlName = "詔安初級";
-      break;
-    case "安中":
-      mediaKey = "2/zh/1zh";
-      fullLvlName = "詔安中級";
-      break;
-    case "安中高":
-      mediaKey = "3/zh/2zh";
-      fullLvlName = "詔安中高";
+    default:
       break;
   }
+
+  switch (級) {
+    case "基":
+      目錄級 = "5";
+      目錄另級 = "1";
+      級名 = "基礎級";
+      break;
+    case "初":
+      目錄級 = "1";
+      級名 = "初級";
+      break;
+    case "中":
+      目錄級 = "2";
+      檔級 = "1";
+      級名 = "中級";
+      break;
+    case "中高":
+      目錄級 = "3";
+      檔級 = "2";
+      級名 = "中高級";
+      break;  
+    default:
+      break;
+  }
+  句目錄級 = 目錄級;
+  fullLvlName = 腔名+級名;
 
   var contentContainer = document.getElementById("generated");
   contentContainer.innerHTML = "";
@@ -213,43 +202,144 @@ function generate(content) {
       for (const line of arr) {
 //        if (line.分類 === cat) {
         if (line.分類 && line.分類.includes(cat) == true) { // 因為基初和中高的類別順序不同，所以 radio button 不再加編號，改為用 includes 來比對
-    
-          //var 句 = data[i].例句.replace(/"/g,'').replace(/\\n/g,'<br>');
-          //var 譯 = data[i].翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
-          /* var item = document.createElement("tr");
-          var no = document.createElement("td");
-          var 句 = document.createElement("td");
-          var 譯 = document.createElement("td");
-          no.innerHTML = data[i].編號;
-          句.innerHTML = data[i].例句.replace(/"/g,'').replace(/\\n/g,'<br>');
-          譯.innerHTML = data[i].翻譯.replace(/"/g,'').replace(/\\n/g,'<br>');
-          item.appendChild(no);
-          item.appendChild(句);
-          item.appendChild(譯);
-    
-          table.appendChild(item);*/
+          
+          // 編號處理
           //var no = data[i].編號.split("-");
           var no = line.編號.split("-");
           if (no[0] <= 9) {no[0] = "0"+no[0];}
           if (content.name.includes("初") == true) {no[0] = "0"+no[0];} // 初很煩檔名的類別號碼前面還要再加 0，神經喔
           if (no[1] <= 9) {no[1] = "0"+no[1];}
           if (no[1] <= 99) {no[1] = "0"+no[1];}
+          mediaNo = no[1];
+          
+          // 例外音檔處理
+          const index = 例外音檔.findIndex(([編號]) => 編號 === line.編號);
+          if (index !== -1) {
+            // 找到符合條件的元素
+            const matchedElement = 例外音檔[index];
+            // 擷取所需的索引值 (例如，第二個索引值)
+            const secondValue = matchedElement[1];
+            // 執行一些動作
+            console.log(`編號 ${line.編號} 符合例外音檔，第二個索引值為 ${secondValue}`);
+            mediaYr = matchedElement[1];
+            mediaNo = matchedElement[2];
+            pre112Insertion = "s/";
+            句目錄級 = 目錄另級;
+          }
+
+          詞目錄 = 目錄級+"/"+檔腔+"/"+檔級+檔腔;
+          句目錄 = 句目錄級+"/"+檔腔+"/"+pre112Insertion+檔級+檔腔;
+          
           let audioIndex = rowIndex*2;
           rowIndex++;
           var item = document.createElement("tr");
 
           var notes = line.備註 ? `<p class="notes">（${line.備註}）</p>` : '';
 
-          item.innerHTML = "<a name=\"" + no[1] + "\"></a><td class='no'>" + line.編號 + "&nbsp;<button class=\"bookmarkBtn\" data-row-id=\"" + no[1] + "\"><i class=\"fas fa-bookmark\"></i></button> <button class=\"playFromThisRow\" data-index=\"" + audioIndex + "\" title=\"從此列播放\">從此列開始<br>自動播放全部 ♥ <i class=\"fas fa-play\"></i></button></td><td><ruby>" + line.客家語 + "<rt>" + line.客語標音 + "</rt></ruby><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + ".mp3' type='audio/mpeg'></audio><br>" + line.華語詞義.replace(/"/g,"") + notes + "</td>";
+          // 第一個 td
+          const td1 = document.createElement('td');
+          td1.className = 'no';
           
-          if (line.例句 && line.例句.trim() !== "") {
-            item.innerHTML += "<td><span class='sentence'>" + line.例句.replace(/"/g, '').replace(/\\n/g, '<br>') + "</span><br><audio class='media' controls='controls' preload='none' > <source src='https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/112/" + mediaKey + "-" + no[0] + "-" + no[1] + "s.mp3' type='audio/mpeg'></audio><br>" + line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>') + "</td>";
+          const anchor = document.createElement('a');
+          anchor.name = no[1];
+          td1.appendChild(anchor);
+          
+          const noText = document.createTextNode(line.編號 + '\u00A0'); // \u00A0 是不換行空格
+          td1.appendChild(noText);
+          
+          const bookmarkBtn = document.createElement('button');
+          bookmarkBtn.className = 'bookmarkBtn';
+          bookmarkBtn.dataset.rowId = no[1];
+          bookmarkBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+          td1.appendChild(bookmarkBtn);
+          
+          const playBtn = document.createElement('button');
+          playBtn.className = 'playFromThisRow';
+          playBtn.dataset.index = audioIndex;
+          playBtn.title = '從此列播放';
+          playBtn.innerHTML = '從此列開始<br>自動播放全部 ♥ <i class="fas fa-play"></i>';
+          td1.appendChild(playBtn);
+          
+          item.appendChild(td1);
+          
+          // 第二個 td
+          const td2 = document.createElement('td');
+          
+          const ruby = document.createElement('ruby');
+          ruby.textContent = line.客家語;
+          const rt = document.createElement('rt');
+          rt.textContent = line.客語標音;
+          ruby.appendChild(rt);
+          td2.appendChild(ruby);
+          
+          td2.appendChild(document.createElement('br'));
+          
+          const audio1 = document.createElement('audio');
+          audio1.className = 'media';
+          audio1.controls = true;
+          audio1.preload = 'none';
+          const source1 = document.createElement('source');
+          source1.src = 'https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/' + generalMediaYr + '/' + 詞目錄 + '-' + no[0] + '-' + no[1] + '.mp3';
+          source1.type = 'audio/mpeg';
+          audio1.appendChild(source1);
+          td2.appendChild(audio1);
+          
+          td2.appendChild(document.createElement('br'));
+          
+          const meaningText = document.createTextNode(line.華語詞義.replace(/"/g, '') + notes);
+          td2.appendChild(meaningText);
+          
+          item.appendChild(td2);
+          
+          // 第三個 td
+          const td3 = document.createElement('td');
+          
+          if (line.例句 && line.例句.trim() !== '') {
+            const sentenceSpan = document.createElement('span');
+            sentenceSpan.className = 'sentence';
+            sentenceSpan.innerHTML = line.例句.replace(/"/g, '').replace(/\\n/g, '<br>');
+            td3.appendChild(sentenceSpan);
+          
+            td3.appendChild(document.createElement('br'));
+          
+            const audio2 = document.createElement('audio');
+            audio2.className = 'media';
+            audio2.controls = true;
+            audio2.preload = 'none';
+            const source2 = document.createElement('source');
+            source2.src = 'https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/' + mediaYr + '/' + 句目錄 + '-' + no[0] + '-' + mediaNo + 's.mp3';
+            source2.type = 'audio/mpeg';
+            audio2.appendChild(source2);
+            td3.appendChild(audio2);
+          
+            td3.appendChild(document.createElement('br'));
+          
+            //const translationText = document.createTextNode(line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>'));
+            const translationText = document.createElement('span');
+            translationText.innerHTML = line.翻譯.replace(/"/g, '').replace(/\\n/g, '<br>');
+            td3.appendChild(translationText);
           } else {
-            //item.innerHTML += "<td></td>"; // 如果 line.例句 為空，則產生一個空的 td
-            item.innerHTML += "<td><audio class='media' data-skip='true' controls='controls' preload='none' > <source src='invalid-audio.mp3' type='audio/mpeg'></audio></td>"; // 產生無效的 audio 元素
+            const audio3 = document.createElement('audio');
+            audio3.className = 'media';
+            audio3.dataset.skip = 'true';
+            audio3.controls = true;
+            audio3.preload = 'none';
+            const source3 = document.createElement('source');
+            source3.src = 'invalid-audio.mp3';
+            source3.type = 'audio/mpeg';
+            audio3.appendChild(source3);
+            td3.appendChild(audio3);
           }
+          
+          item.appendChild(td3);
 
           table.appendChild(item);
+
+          // 例外音檔處理結束的相關復位
+          pre112Insertion = "";
+          mediaYr = generalMediaYr;
+          句目錄級 = 目錄級;
+          
         } else {continue;}
       }
       table.setAttribute("width","100%");
