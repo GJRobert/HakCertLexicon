@@ -234,7 +234,7 @@ function generate(content) {
           rowIndex++;
           var item = document.createElement("tr");
 
-          var notes = line.備註 ? `<p class="notes">（${line.備註}）</p>` : '';
+          // var notes = line.備註 ? line.備註 : '';
 
           // 第一個 td
           const td1 = document.createElement('td');
@@ -286,8 +286,20 @@ function generate(content) {
           
           td2.appendChild(document.createElement('br'));
           
-          const meaningText = document.createTextNode(line.華語詞義.replace(/"/g, '') + notes);
+          const meaningText = document.createTextNode(line.華語詞義.replace(/"/g, ''));
           td2.appendChild(meaningText);
+
+          // 備註 p 元素
+          if (line.備註 && line.備註.trim() !== '') {
+            const notesP = document.createElement('p');
+            notesP.className = 'notes';
+            notesP.textContent = `（${line.備註}）`;
+            td2.appendChild(notesP);
+          } else {
+            const notesP = document.createElement('p');
+            notesP.style.display = 'none';
+            td2.appendChild(notesP);
+          }
           
           item.appendChild(td2);
           
