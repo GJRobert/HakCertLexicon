@@ -169,9 +169,8 @@ function generate(content) {
   var contentContainer = document.getElementById("generated");
   contentContainer.innerHTML = "";
 
-  var title = document.createElement("h2");
+  var title = document.getElementById("header");
   title.innerHTML = "現在學習的是" + fullLvlName;
-  contentContainer.appendChild(title);
   
   // var cat = "人體與醫療";
   
@@ -189,10 +188,10 @@ function generate(content) {
       console.log(cat);
       contentContainer.innerHTML = "";
       
-      var title = document.createElement("h2");
+      //var title = document.createElement("h2");
       title.innerHTML = "現在學習的是"+fullLvlName+"的"+cat;
-      contentContainer.appendChild(title);
-      title.setAttribute("id","title");
+      //contentContainer.appendChild(title);
+      //title.setAttribute("id","title");
 
       var audioElements = "" // 要在這邊把先前 generate 的 audio 都洗掉
 
@@ -257,7 +256,7 @@ function generate(content) {
           playBtn.className = 'playFromThisRow';
           playBtn.dataset.index = audioIndex;
           playBtn.title = '從此列播放';
-          playBtn.innerHTML = '從此列開始<br>自動播放全部 ♥ <i class="fas fa-play"></i>';
+          playBtn.innerHTML = '<i class="fas fa-play"></i>';
           td1.appendChild(playBtn);
           
           item.appendChild(td1);

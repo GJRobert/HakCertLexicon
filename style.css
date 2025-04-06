@@ -110,7 +110,7 @@ a {color: #678c3f;}
 audio {max-width: 5em;}
 .no {font-family: 'Operator Mono';}
 .sentence, .sentence * {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
-#title {position: sticky;top: 10px;background: rgba(170,
+#header {position: sticky;top: 10px;background: rgba(170,
   150,
   183,0.5);backdrop-filter: blur(5px); z-index: 10;}
 .bookmarkBtn {
@@ -179,6 +179,10 @@ audio {max-width: 5em;}
 }
 #audioControls button.ended i, button.playFromThisRow.ended i {
   background-color: red !important;
+}
+.playFromThisRow {
+  background: none;
+  border: none;
 }
 button#playAllBtn {display: none;}
 
