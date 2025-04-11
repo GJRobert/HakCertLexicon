@@ -39,7 +39,7 @@
 }
 
 .radioButton:checked::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   width: 12px;
@@ -52,11 +52,13 @@
 /* Mine */
 #generated td:nth-of-type(2) {
   ruby {
-    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, Iansui, sans-serif !important;
+    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, Iansui,
+      sans-serif !important;
     font-size: 1.5em;
     font-weight: 700;
   }
-  rt, ruby.sandhi {
+  rt,
+  ruby.sandhi {
     font-size: 1em;
     font-family: 'jf金萱那提2.0', tauhu-oo, Iansui, sans-serif !important;
     margin-bottom: 0.3em;
@@ -64,7 +66,7 @@
   ruby.sandhi {
     font-size: revert !important;
     /* font-family: initial !important; */
-    
+
     rt {
       font-size: initial !important;
       color: inherit;
@@ -88,7 +90,8 @@
 body {
   font-size: 20px;
 }
-body, body * {
+body,
+body * {
   font-family: Iansui, tauhu-oo, serif;
   line-height: 1.8em;
   color: var(--main-text-color);
@@ -97,23 +100,39 @@ body, body * {
   table-layout: fixed;
   width: 100%;
 }*/
-td {padding: 1em; /*max-width: 60vw;*/}
-tr:nth-child(even) { background-color: rgba(103,
-  140,
-  63,0.5); }
-a {color: #678c3f;}
+td {
+  padding: 1em; /*max-width: 60vw;*/
+}
+tr:nth-child(even) {
+  background-color: rgba(103, 140, 63, 0.5);
+}
+a {
+  color: #678c3f;
+}
 
 .media {
   height: 1em;
   border-radius: 1em;
 }
-audio {max-width: 5em;}
-.no {font-family: 'Operator Mono';}
-.sentence, .sentence * {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
-#header {position: sticky;top: 10px;background: rgba(170,
-  150,
-  183,0.5);backdrop-filter: blur(5px); z-index: 10; padding: 5px 0;
-    /* 可能需要微調 padding */}
+audio {
+  max-width: 5em;
+}
+.no {
+  font-family: 'Operator Mono';
+}
+.sentence,
+.sentence * {
+  font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;
+}
+#header {
+  position: sticky;
+  top: 10px;
+  background: rgba(170, 150, 183, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 10;
+  padding: 5px 0;
+  /* 可能需要微調 padding */
+}
 .bookmarkBtn {
   background: none;
   border: none;
@@ -126,8 +145,12 @@ audio {max-width: 5em;}
   text-align: center;
   max-width: 40vw;
 }
-.progressLvl {color: red;}
-.progressCat {color: blue;}
+.progressLvl {
+  color: red;
+}
+.progressCat {
+  color: blue;
+}
 
 /* 歸到頁頂高个按鈕 */
 #backToTopBtn {
@@ -148,7 +171,9 @@ audio {max-width: 5em;}
 #backToTopBtn:hover {
   background-color: rgba(0, 0, 0, 0.8); /* 滑鼠懸停時加深背景顏色 */
 }
-#backToTopBtn i {color: white;}
+#backToTopBtn i {
+  color: white;
+}
 
 /* 播放全部 */
 /*#audioControls {
@@ -156,14 +181,15 @@ audio {max-width: 5em;}
   top: 10px;
   left: 10px;
   z-index: 99;
-}*//* 改成放 title？ */
+}*/ /* 改成放 title？ */
 #audioControls button {
   border: none;
   font-size: 24px;
   margin: 0 5px;
   background: none;
 }
-#audioControls button i, button.playFromThisRow i {
+#audioControls button i,
+button.playFromThisRow i {
   cursor: pointer;
   background: green;
   color: wheat;
@@ -171,29 +197,34 @@ audio {max-width: 5em;}
   border-radius: 0.3em;
   padding: 0.5em;
 }
-#audioControls button.playable i, button.playFromThisRow.playable i {
+#audioControls button.playable i,
+button.playFromThisRow.playable i {
   background-color: green !important;
 }
-#audioControls button.ongoing i, button.playFromThisRow.ongoing i {
+#audioControls button.ongoing i,
+button.playFromThisRow.ongoing i {
   background-color: yellow !important;
   color: var(--main-text-color);
 }
-#audioControls button.ended i, button.playFromThisRow.ended i {
+#audioControls button.ended i,
+button.playFromThisRow.ended i {
   background-color: red !important;
 }
 .playFromThisRow {
   background: none;
   border: none;
 }
-button#playAllBtn {display: none;}
+button#playAllBtn {
+  display: none;
+}
 
-audio[data-skip="true"] {display: none;}
+audio[data-skip='true'] {
+  display: none;
+}
 
 .notes {
   font-size: 0.8em;
-  font-family: 'Linux Libertine',
-    'Huiwen-Fangsong',
-    serif;
+  font-family: 'Linux Libertine', 'Huiwen-Fangsong', serif;
   color: white;
   background-color: #aa96b7;
   padding: 0.2em;
@@ -209,20 +240,28 @@ audio[data-skip="true"] {display: none;}
   }
 }
 .四縣 {
-  background-color: #678D3F;
+  background-color: #678d3f;
   color: black;
   a {
     color: white;
   }
 }
-.海陸 {background-color: #76AD67;}
-.大埔 {background-color: #5898A9;}
-.饒平 {background-color: #834FA1;}
-.詔安 {background-color: #974A47;}
+.海陸 {
+  background-color: #76ad67;
+}
+.大埔 {
+  background-color: #5898a9;
+}
+.饒平 {
+  background-color: #834fa1;
+}
+.詔安 {
+  background-color: #974a47;
+}
 
 tr#nowPlaying {
   /*text-shadow: 0.2em 0.2em 0.3em var(--iMazinGrace-1);*/
-  text-shadow: 0.05em 0.05em 0px #FFFFFF, 0.1em 0.1em 0px rgba(0, 0, 0, 0.15);
+  text-shadow: 0.05em 0.05em 0px #ffffff, 0.1em 0.1em 0px rgba(0, 0, 0, 0.15);
   position: relative; /* 必須設定，以讓偽元素相對於 tr 定位 */
 }
 tr#nowPlaying td:first-of-type {
