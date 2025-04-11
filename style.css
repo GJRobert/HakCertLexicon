@@ -112,7 +112,8 @@ audio {max-width: 5em;}
 .sentence, .sentence * {font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;}
 #header {position: sticky;top: 10px;background: rgba(170,
   150,
-  183,0.5);backdrop-filter: blur(5px); z-index: 10;}
+  183,0.5);backdrop-filter: blur(5px); z-index: 10; padding: 5px 0;
+    /* 可能需要微調 padding */}
 .bookmarkBtn {
   background: none;
   border: none;
@@ -226,4 +227,18 @@ tr#nowPlaying {
 }
 tr#nowPlaying td:first-of-type {
   background-color: var(--iMazinGrace-1);
+}
+
+/* 學習進度下拉擇單 */
+#progressDropdown {
+  padding: 5px 8px; /* 內邊距 */
+  border: 1px solid #ccc; /* 邊框 */
+  border-radius: 4px; /* 圓角 */
+  background-color: white; /* 背景色 */
+  font-family: inherit; /* 繼承父元素字型 */
+  font-size: 0.9em; /* 字型大小，可調整 */
+  margin: 0 10px; /* 外邊距，與周圍元素隔開 */
+  vertical-align: middle; /* 垂直對齊方式 */
+  max-width: 350px; /* 可選：限制最大寬度，避免過長 */
+  cursor: pointer; /* 滑鼠指標 */
 }

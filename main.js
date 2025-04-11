@@ -365,12 +365,6 @@ function generate(content) {
 
       // 嘗試寫入學習進度，Gemini 教的
       //document.addEventListener('DOMContentLoaded', function() {
-        var progress = document.createElement("span");
-        const bookmarkData = JSON.parse(localStorage.getItem('bookmark'));
-        if (bookmarkData && bookmarkData.cat == cat) {
-          progress.innerHTML = "，可跳到已存進度第 <a href=\"#" + bookmarkData.rowId + "\">" + bookmarkData.rowId + "</a> 行（" + bookmarkData.percentage + "%）";
-        }
-        title.appendChild(progress);
         const bookmarkButtons = document.querySelectorAll('.bookmarkBtn');
         const a = fullLvlName; // 變數 a 的值
         const b = cat;
@@ -381,18 +375,47 @@ function generate(content) {
             let rowNum = rowId.replace(/^0+/, '');
             let percentage = rowNum / (bookmarkButtons.length) * 100;
             let percentageFixed = percentage.toFixed(2);
+            const currentTableName = fullLvlName; // 使用 generate 函式內的變數
+            const currentCategory = cat; // 使用 generate 函式內的變數
             
-            // 寫入 localStorage
-            localStorage.setItem("bookmark", JSON.stringify({
+            // --- 修改儲存邏輯 開始 ---
+            // 1. 讀取現有進度陣列
+            let bookmarks = JSON.parse(localStorage.getItem("hakkaBookmarks")) || [];
+        
+            // 2. 建立新的進度物件
+            const newBookmark = {
               rowId: rowId,
               percentage: percentageFixed,
-              cat: b,
-              tableName: a
-            }));
-            
-            console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
-            //progress.innerHTML = "";
-            progress.innerHTML = `，儲存書籤進度到 <a href="#${rowId}">${rowId}</a> (${percentageFixed}%)`;
+              cat: currentCategory,
+              tableName: currentTableName,
+              timestamp: Date.now() // 加入時間戳，方便排序或判斷新舊
+            };
+        
+            // 3. (重要) 檢查是否已有相同 table + category 的進度，若有則移除舊的
+            const existingIndex = bookmarks.findIndex(bm => bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat);
+            if (existingIndex > -1) {
+              bookmarks.splice(existingIndex, 1);
+            }
+        
+            // 4. 將新進度加到陣列最前面 (最新)
+            bookmarks.unshift(newBookmark);
+        
+            // 5. 只保留最新的 10 筆
+            bookmarks = bookmarks.slice(0, 10);
+        
+            // 6. 存回 localStorage
+            localStorage.setItem("hakkaBookmarks", JSON.stringify(bookmarks));
+            // --- 修改儲存邏輯 結束 ---
+        
+            console.log(`書籤 ${rowId} 已儲存至列表，表格名稱：${currentTableName}，類別：${currentCategory}`);
+        
+            // --- 移除原本更新 p 標籤的程式碼 ---
+            // progress.innerHTML = `，儲存書籤進度到 <a href="#<span class="math-inline">\{rowId\}"\></span>{rowId}</a> (${percentageFixed}%)`;
+            // --- 移除結束 ---
+        
+            // --- 新增開始：更新下拉選單顯示 ---
+            updateProgressDropdown();
+            // --- 新增結束 ---
             // 可選：提供使用者回饋，例如改變按鈕樣式或顯示訊息
           });
         });
@@ -403,23 +426,55 @@ function generate(content) {
         /* 點每個 audio 都會記錄播放進度 */
         audioElements.forEach(audio => {
           audio.addEventListener('play', function() {
-            const rowButton = this.closest('tr').querySelector('button');
+            // 取得 rowId 的邏輯不變
+            const rowButton = this.closest('tr').querySelector('button[data-row-id]'); // 更精確的選擇器
+            if (!rowButton) return; // 防錯：如果找不到按鈕
             const rowId = rowButton.dataset.rowId;
             //const rowId = this.closest('button').dataset.rowId;
             let rowNum = rowId.replace(/^0+/,'');
-            let percentage = rowNum / (bookmarkButtons.length) * 100;
+            let percentage = rowNum / (bookmarkButtons.length) * 100; // 確保 bookmarkButtons 在此作用域可用
             let percentageFixed = percentage.toFixed(2);
+            const currentTableName = fullLvlName; // 使用 generate 函式內的變數
+            const currentCategory = cat; // 使用 generate 函式內的變數
 
-            localStorage.setItem("bookmark", JSON.stringify({
+            // --- 修改儲存邏輯 開始 (與上面書籤按鈕的邏輯完全相同) ---
+            // 1. 讀取現有進度陣列
+            let bookmarks = JSON.parse(localStorage.getItem("hakkaBookmarks")) || [];
+        
+            // 2. 建立新的進度物件
+            const newBookmark = {
               rowId: rowId,
               percentage: percentageFixed,
-              cat: b,
-              tableName: a
-            }));
-      
-            console.log(`書籤 ${rowId} 已儲存，表格名稱：${a}，類別：${cat}`);
-            //progress.innerHTML = "";
-            progress.innerHTML = `，剛播放進度到 <a href="#${rowId}">${rowId}</a> (${percentageFixed}%)`;
+              cat: currentCategory,
+              tableName: currentTableName,
+              timestamp: Date.now()
+            };
+        
+            // 3. 檢查並移除舊的相同 table + category 進度
+            const existingIndex = bookmarks.findIndex(bm => bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat);
+            if (existingIndex > -1) {
+              bookmarks.splice(existingIndex, 1);
+            }
+        
+            // 4. 將新進度加到陣列最前面
+            bookmarks.unshift(newBookmark);
+        
+            // 5. 只保留最新的 10 筆
+            bookmarks = bookmarks.slice(0, 10);
+        
+            // 6. 存回 localStorage
+            localStorage.setItem("hakkaBookmarks", JSON.stringify(bookmarks));
+            // --- 修改儲存邏輯 結束 ---
+        
+            console.log(`播放觸發進度儲存至列表：${rowId}，表格名稱：${currentTableName}，類別：${currentCategory}`);
+        
+            // --- 移除原本更新 p 標籤的程式碼 ---
+            // progress.innerHTML = `，剛播放進度到 <a href="#<span class="math-inline">\{rowId\}"\></span>{rowId}</a> (${percentageFixed}%)`;
+            // --- 移除結束 ---
+        
+            // --- 新增開始：更新下拉選單顯示 ---
+            updateProgressDropdown();
+            // --- 新增結束 ---
           });
         });
 
@@ -646,11 +701,7 @@ function generate(content) {
 
 /* 最頂端一開始讀取進度 */
 document.addEventListener('DOMContentLoaded', function() {
-  const bookmarkData = JSON.parse(localStorage.getItem('bookmark'));
-  var showProgress = document.getElementById("progress");
-  if (bookmarkData) {
-    showProgress.innerHTML = "進度到<span class='progressLvl'>" + bookmarkData.tableName +"</span><span class='progressCat'>"+ bookmarkData.cat + "</span>，第 <a href=\"#"+bookmarkData.rowId+"\">" + bookmarkData.rowId + "</a> 行（該類別 " + bookmarkData.percentage +"%）。";
-  }
+  updateProgressDropdown();
 });
 
 /* 回到頁頂的按鈕 */
@@ -821,3 +872,27 @@ function 大埔低升異化() {
     }
   });
 }
+
+/* --- 新增開始：更新進度下拉選單 --- */
+function updateProgressDropdown() {
+  const progressDropdown = document.getElementById('progressDropdown');
+  if (!progressDropdown) return; // 如果找不到元素就返回
+
+  // 讀取儲存的進度，若無則初始化為空陣列
+  const bookmarks = JSON.parse(localStorage.getItem("hakkaBookmarks")) || [];
+
+  // 清空現有選項 (保留第一個預設選項)
+  progressDropdown.innerHTML = '<option selected disabled>學習進度</option>';
+
+  // 遍歷進度陣列，為每個進度產生一個選項
+  bookmarks.forEach((bookmark, index) => {
+    const option = document.createElement('option');
+    // 格式化顯示文字
+    option.textContent = `${index + 1}. ${bookmark.tableName} - ${bookmark.cat} - 第 ${bookmark.rowId} 行 (${bookmark.percentage})`;
+    // 可以設定 value 屬性，方便未來擴充點選跳轉功能
+    // option.value = JSON.stringify(bookmark);
+    option.value = index; // 簡單用索引當 value
+    progressDropdown.appendChild(option);
+  });
+}
+/* --- 新增結束 --- */
