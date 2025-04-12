@@ -162,7 +162,7 @@ function generate(content, initialCategory = null, targetRowId = null) {
   contentContainer.innerHTML = ''; // 清空顯示區域
 
   var title = document.getElementById('header');
-  title.innerHTML = ''; // 設定初始標題
+  // title.innerHTML = ''; // <-- 刪除這行，這樣才不會在每次呼叫 generate 時清空 header 裡面的下拉選單。
 
   // 解析詞彙資料
   const arr = csvToArray(content.content);
@@ -226,6 +226,11 @@ function generate(content, initialCategory = null, targetRowId = null) {
     // 可以選擇預設顯示第一個分類，或者讓使用者自行點選。
     // 目前行為：不預選，讓使用者點選。
     console.log('No initial category specified.'); // 增加日誌
+    // 清除舊表格內容和 radio button 選擇
+    radios.forEach(radio => radio.checked = false);
+    contentContainer.innerHTML = '<p style="text-align: center; margin-top: 20px;">請選擇一個類別來顯示詞彙。</p>';
+    // **新增這行**：移除 header 中的播放控制鈕
+    header?.querySelector('#audioControls')?.remove(); // 使用 Optional Chaining 避免錯誤
   }
 } // --- generate 函式結束 ---
 
@@ -246,18 +251,7 @@ function buildTableAndSetupPlayback(
     return; // 如果 header 不存在，後續操作無意義
   }
 
-  // --- 修改：更新 Header 文字，同時保留其他元素 (如控制按鈕) ---
-  // 1. 尋找或建立用於顯示文字的 span
-  let headerTextSpan = header.querySelector('#headerText');
-  if (!headerTextSpan) {
-    headerTextSpan = document.createElement('span');
-    headerTextSpan.id = 'headerText';
-    // 確保文字 span 在 header 的最前面
-    header.insertBefore(headerTextSpan, header.firstChild);
-  }
-  // 2. 設定文字內容
-  headerTextSpan.textContent = `現在學習的是${dialectInfo.fullLvlName}的${category}`;
-  // --- 修改結束 ---
+  // 同歸隻處理 headerTextSpan 个區塊刪除。因為𫣆俚毋會再過用 span 顯示文字，係直接用下拉擇單哩。
 
   console.log(
     `Building table for category: ${category}, autoPlayRow: ${autoPlayTargetRowId}`
@@ -836,7 +830,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (selectedIndex !== null && !isNaN(parseInt(selectedIndex))) {
         const bookmarks =
           JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
-        const selectedBookmark = bookmarks[parseInt(selectedIndex)];
+        const selectedBookmark = bookmarks.find(bm => (bm.tableName + '||' + bm.cat) === selectedValue);
 
         if (selectedBookmark) {
           console.log('Dropdown selected:', selectedBookmark); // 增加日誌
@@ -855,16 +849,21 @@ document.addEventListener('DOMContentLoaded', function () {
             ); // 增加日誌
             // 呼叫 generate，並傳入目標分類和行號
             generate(dataObject, targetCategory, targetRowIdToGo);
+            console.log('Dropdown change 執行結束，目前 selectedIndex:', this.selectedIndex);
           } else {
             console.error(
               '無法找到對應的資料變數:',
               dataVarName || targetTableName
             );
             alert('載入選定進度時發生錯誤：找不到對應的資料集。');
+            this.selectedIndex = 0; // 錯誤時重設，這行要保留
           }
+        } else {
+          console.error("找不到對應 value 的書籤:", selectedValue);
+          this.selectedIndex = 0; // 錯誤時重設
         }
         // 選擇後將下拉選單重置回預設選項 (可選)
-        this.selectedIndex = 0;
+        // this.selectedIndex = 0; // 刪忒，分下拉擇單在你擇一隻項目還過跳轉後，就會停留在你擇个該隻項目頂
       }
     });
   } else {
@@ -1051,6 +1050,7 @@ function 大埔低升異化() {
 function updateProgressDropdown() {
   const progressDropdown = document.getElementById('progressDropdown');
   if (!progressDropdown) return; // 如果找不到元素就返回
+  const previousValue = progressDropdown.value; // <-- 新增：記住舊的 value
 
   // 讀取儲存的進度，若無則初始化為空陣列
   const bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
@@ -1067,9 +1067,28 @@ function updateProgressDropdown() {
     } - 第 ${bookmark.rowId} 行 (${bookmark.percentage}%)`;
     // 可以設定 value 屬性，方便未來擴充點選跳轉功能
     // option.value = JSON.stringify(bookmark);
-    option.value = index; // 簡單用索引當 value
+    option.value = bookmark.tableName + '||' + bookmark.cat; // 用 tableName 和 cat 組合，' || ' 當分隔符
     progressDropdown.appendChild(option);
   });
+
+  // --- 新增：嘗試恢復之前的選中狀態 ---
+  if (previousValue && previousValue !== '學習進度') {
+    // 尋找具有相同 value 的新選項
+    const newOptionToSelect = progressDropdown.querySelector(`option[value="${previousValue}"]`);
+    if (newOptionToSelect) {
+      // 如果找到了，就選中它
+      newOptionToSelect.selected = true;
+      console.log("恢復下拉選單選擇:", previousValue);
+    } else {
+      // 如果找不到了 (可能該進度被擠出前10名)，就顯示預設的 "學習進度"
+      progressDropdown.selectedIndex = 0;
+      console.log("先前選擇的項目已不在列表中，重設下拉選單");
+    }
+  } else {
+    // 如果之前沒有選擇，或是選的是預設值，保持預設值被選中
+    progressDropdown.selectedIndex = 0;
+  }
+  // --- 新增結束 ---
 }
 /* --- 新增結束 --- */
 
