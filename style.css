@@ -279,10 +279,10 @@ tr#nowPlaying td:first-of-type {
   border-radius: 4px; /* 圓角 */
   background-color: white; /* 背景色 */
   font-family: inherit; /* 繼承父元素字型 */
-  font-size: 0.9em; /* 字型大小，可調整 */
+  font-size: 3vw; /* 字型大小，可調整 */
   margin: 0; /* 移除外距，由 header 的 gap 控制 */
   vertical-align: middle; /* 垂直對齊方式 */
-  max-width: 300px; /* 或適合的寬度 */
+  /*max-width: 300px; /* 或適合的寬度 */
   flex-grow: 1; /* 允許它伸展利用空間 */
   min-width: 150px; /* 確保最小寬度 */
   cursor: pointer; /* 滑鼠指標 */

@@ -825,15 +825,17 @@ document.addEventListener('DOMContentLoaded', function () {
   const progressDropdown = document.getElementById('progressDropdown');
   if (progressDropdown) {
     progressDropdown.addEventListener('change', function (event) {
-      const selectedIndex = this.value;
-      // 檢查是否選了有效的進度 (而不是預設的 "學習進度")
-      if (selectedIndex !== null && !isNaN(parseInt(selectedIndex))) {
-        const bookmarks =
-          JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+      const selectedValue = this.value; // 直接用 selectedValue 變數接收 this.value
+
+      // 檢查是否選了有效的進度 (value 不是預設的 "學習進度" 或空值)
+      if (selectedValue && selectedValue !== '學習進度') {
+        const bookmarks = JSON.parse(localStorage.getItem("hakkaBookmarks")) || [];
+
+        // 用 selectedValue (例如 "四縣基礎級||人體與醫療") 來尋找對應的書籤物件
         const selectedBookmark = bookmarks.find(bm => (bm.tableName + '||' + bm.cat) === selectedValue);
 
         if (selectedBookmark) {
-          console.log('Dropdown selected:', selectedBookmark); // 增加日誌
+          console.log("Dropdown selected (value):", selectedValue, "Bookmark:", selectedBookmark);
           // 從書籤資訊中獲取所需參數
           const targetTableName = selectedBookmark.tableName;
           const targetCategory = selectedBookmark.cat;
@@ -844,26 +846,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
           if (dataVarName && typeof window[dataVarName] !== 'undefined') {
             const dataObject = window[dataVarName]; // 取得對應的詞彙資料物件
-            console.log(
-              `Calling generate for ${dataVarName}, category: ${targetCategory}, row: ${targetRowIdToGo}`
-            ); // 增加日誌
+            console.log(`Calling generate for ${dataVarName}, category: ${targetCategory}, row: ${targetRowIdToGo}`);
             // 呼叫 generate，並傳入目標分類和行號
             generate(dataObject, targetCategory, targetRowIdToGo);
-            console.log('Dropdown change 執行結束，目前 selectedIndex:', this.selectedIndex);
+            // 這裡不需要重設 selectedIndex 了
           } else {
-            console.error(
-              '無法找到對應的資料變數:',
-              dataVarName || targetTableName
-            );
-            alert('載入選定進度時發生錯誤：找不到對應的資料集。');
-            this.selectedIndex = 0; // 錯誤時重設，這行要保留
+            console.error("無法找到對應的資料變數:", dataVarName || targetTableName);
+            alert("載入選定進度時發生錯誤：找不到對應的資料集。");
+            this.selectedIndex = 0; // 錯誤時重設回預設選項
           }
         } else {
+          // 這種情況比較少見，除非 localStorage 和下拉選單不同步
           console.error("找不到對應 value 的書籤:", selectedValue);
-          this.selectedIndex = 0; // 錯誤時重設
+          alert("載入選定進度時發生錯誤：選項與儲存資料不符。");
+          this.selectedIndex = 0; // 錯誤時重設回預設選項
         }
-        // 選擇後將下拉選單重置回預設選項 (可選)
-        // this.selectedIndex = 0; // 刪忒，分下拉擇單在你擇一隻項目還過跳轉後，就會停留在你擇个該隻項目頂
       }
     });
   } else {
