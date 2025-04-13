@@ -1212,4 +1212,23 @@ function saveBookmark(rowId, percentage, category, tableName) {
     // 4. 儲存更新後的紀錄 (最多 10 筆)
     localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
     updateProgressDropdown(); // 更新下拉選單顯示
+
+    // --- 新增：強制選中剛儲存的進度並更新詳情 ---
+    const progressDropdown = document.getElementById('progressDropdown');
+    const progressDetailsSpan = document.getElementById('progressDetails');
+
+    if (progressDropdown && progressDropdown.options.length > 1) { // 確保下拉選單存在且有實際選項 (除了預設選項)
+        progressDropdown.selectedIndex = 1; // 選中第一個實際進度 (索引為 1)
+        console.log("Dropdown selection forced to index 1 (newest).");
+
+        if (progressDetailsSpan) {
+            // 使用 newBookmark 的資訊更新詳情
+            progressDetailsSpan.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
+            console.log("Progress details updated for newest bookmark.");
+        }
+    } else if (progressDropdown && progressDropdown.options.length <= 1 && progressDetailsSpan) {
+          // 如果只有預設選項或沒有選項，清空詳情
+          progressDetailsSpan.textContent = '';
+    }
+    // --- 新增結束 ---
 }

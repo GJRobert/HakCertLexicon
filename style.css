@@ -189,8 +189,8 @@ audio {
 }*/ /* 改成放 title？ */
 #audioControls button {
   border: none;
-  font-size: 24px;
-  margin: 0 5px;
+  font-size: 4vw;
+  /* margin: 0 5px;*/
   background: none;
 }
 #audioControls button i,
