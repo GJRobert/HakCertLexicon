@@ -1115,33 +1115,83 @@ document.addEventListener('DOMContentLoaded', function () {
         const dataObject = window[dataVarName]; // 取得對應的詞彙資料物件
         const decodedCategory = decodeURIComponent(categoryParam); // **解碼 category**
 
-        console.log(
-          `Calling generate on load for ${dataVarName}, category: ${decodedCategory}, row: ${rowParam}`
-        );
-        // 呼叫 generate，並傳入目標分類和行號
-        generate(dataObject, decodedCategory, rowParam);
+        // --- 修改：顯示 Modal 而不是直接呼叫 generate ---
+        const autoplayModal = document.getElementById('autoplayModal');
+        // const modalBackdrop = autoplayModal.querySelector('.modal-backdrop'); // 背景現在是 #autoplayModal 本身
+        const modalContent = autoplayModal.querySelector('.modal-content');
 
-        // --- 新增：如果 URL 有參數，也嘗試更新下拉選單的選中狀態 ---
-        if (progressDropdown) {
-          const targetValue = targetTableName + '||' + decodedCategory;
-          const optionToSelect = progressDropdown.querySelector(
-            `option[value="${targetValue}"]`
+        if (autoplayModal && modalContent) {
+          // 儲存需要傳遞的資訊 (或者在監聽器內重新獲取)
+          // 這裡選擇在監聽器內重新獲取，避免閉包問題
+
+          // 隱藏 Modal 並執行 generate 的函式
+          const startPlayback = () => {
+            console.log('Modal clicked, starting playback...');
+            autoplayModal.style.display = 'none';
+            // 在使用者互動後呼叫 generate
+            generate(dataObject, decodedCategory, rowParam);
+
+            // --- (可選) 更新下拉選單狀態 ---
+            if (progressDropdown) {
+              const targetValue = targetTableName + '||' + decodedCategory;
+              const optionToSelect = progressDropdown.querySelector(
+                `option[value="${targetValue}"]`
+              );
+              if (optionToSelect) {
+                optionToSelect.selected = true;
+                console.log(
+                  'Selected corresponding option in dropdown based on URL params.'
+                );
+              } else {
+                progressDropdown.selectedIndex = 0;
+                console.log(
+                  'URL params specified a bookmark not currently in the top 10 dropdown options.'
+                );
+              }
+            }
+            // --- 更新結束 ---
+          };
+
+          // 點擊 Modal 內容區域時觸發播放
+          modalContent.addEventListener('click', startPlayback, { once: true });
+
+          // 點擊 Modal 背景 (外部陰暗處) 時僅關閉 Modal
+          autoplayModal.addEventListener(
+            'click',
+            (event) => {
+              // 檢查點擊的是否是背景本身，而不是內容區域
+              if (event.target === autoplayModal) {
+                console.log('Modal backdrop clicked, cancelling autoplay.');
+                autoplayModal.style.display = 'none';
+                // 清理 modalContent 的監聽器，避免下次 modal 顯示時重複觸發
+                modalContent.removeEventListener('click', startPlayback);
+                // 可選：顯示預設提示
+                const contentContainer = document.getElementById('generated');
+                if (
+                  contentContainer &&
+                  contentContainer.innerHTML.trim() === ''
+                ) {
+                  contentContainer.innerHTML =
+                    '<p style="text-align: center; margin-top: 20px;">請點擊上方連結選擇腔調與級別。</p>';
+                }
+              }
+            },
+            { once: true }
+          ); // 背景的監聽器也設為 once，點擊一次後移除
+
+          // 顯示 Modal
+          autoplayModal.style.display = 'flex'; // 使用 flex 來置中
+          console.log('Autoplay modal displayed.');
+        } else {
+          console.error('Modal elements not found!');
+          // 備用方案：如果找不到 Modal，直接呼叫 generate (可能無法自動播放)
+          console.warn(
+            'Modal not found, attempting direct generation (autoplay might fail).'
           );
-          if (optionToSelect) {
-            optionToSelect.selected = true;
-            console.log(
-              'Selected corresponding option in dropdown based on URL params.'
-            );
-          } else {
-            // 如果下拉選單中沒有完全匹配的項 (可能因為不是最新的10條記錄)
-            // 保持預設選項，但 progressDetails 仍然會顯示 (由 buildTableAndSetupPlayback 處理)
-            progressDropdown.selectedIndex = 0;
-            console.log(
-              'URL params specified a bookmark not currently in the top 10 dropdown options.'
-            );
-          }
+          generate(dataObject, decodedCategory, rowParam);
+          // ... (對應的下拉選單更新邏輯) ...
         }
-        // --- 新增結束 ---
+        // --- 修改結束 ---
       } else {
         console.error(
           '無法找到對應的資料變數:',
