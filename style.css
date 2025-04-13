@@ -133,8 +133,9 @@ audio {
   padding: 8px 15px; /* 微調 padding */
   display: flex; /* 改用 Flexbox 排版 */
   align-items: center; /* 垂直置中 */
-  justify-content: space-between; /* 兩端對齊 */
-  flex-wrap: wrap; /* 空間不夠時允許換行 */
+  /* justify-content: space-between; /* 兩端對齊 */
+  justify-content: flex-start; /* <--- 讓元素靠左對齊 */
+  flex-wrap: nowrap; /* <--- 嘗試不換行，讓 details 被壓縮 */
   gap: 10px; /* 項目之間的間距 */
 }
 .bookmarkBtn {
@@ -282,8 +283,20 @@ tr#nowPlaying td:first-of-type {
   font-size: 3vw; /* 字型大小，可調整 */
   margin: 0; /* 移除外距，由 header 的 gap 控制 */
   vertical-align: middle; /* 垂直對齊方式 */
-  /*max-width: 300px; /* 或適合的寬度 */
-  flex-grow: 1; /* 允許它伸展利用空間 */
+  max-width: 50%; /* 或適合的寬度 */
+  /*flex-grow: 1; /* 允許它伸展利用空間 */
   min-width: 150px; /* 確保最小寬度 */
   cursor: pointer; /* 滑鼠指標 */
+  flex-shrink: 0; /* <--- 防止被壓縮 */
+}
+
+#progressDetails {
+  font-size: 2vw; /* 稍微小一點的字 */
+  color: #555; /* 設定顏色 */
+  vertical-align: middle; /* 垂直對齊 */
+  margin-left: 8px; /* 和下拉選單間隔 */
+  white-space: nowrap; /* 防止文字換行 */
+  flex-shrink: 1; /* 允許被壓縮 */
+  overflow: hidden; /* 超出部分隱藏 */
+  text-overflow: ellipsis; /* 超出部分顯示省略號 */
 }

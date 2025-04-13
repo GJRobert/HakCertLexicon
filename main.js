@@ -90,6 +90,14 @@ function csvToArray(str, delimiter = ',') {
 
 // 加入新的可選參數：initialCategory, targetRowId
 function generate(content, initialCategory = null, targetRowId = null) {
+
+  // --- 新增：如果不是從下拉選單觸發，就清除進度詳情 ---
+  if (!initialCategory) {
+      const progressDetailsSpan = document.getElementById('progressDetails');
+      if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+  }
+  // --- 新增結束 ---
+  
   // --- 保留 generate 開頭的變數定義和分析腔別級別的邏輯 ---
   console.log('Generate called for:', content.name); // 增加日誌
   let 腔 = '';
@@ -194,6 +202,10 @@ function generate(content, initialCategory = null, targetRowId = null) {
       if (this.checked) {
         const selectedCategory = this.value;
         console.log('Category changed to:', selectedCategory); // 增加日誌
+        // --- 新增：手動切換分類時清除進度詳情 ---
+        const progressDetailsSpan = document.getElementById('progressDetails');
+        if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+        // --- 新增結束 ---
         // 當 radio button 改變時，呼叫新函式來建立表格並設定功能
         buildTableAndSetupPlayback(selectedCategory, arr, dialectInfo);
       }
@@ -850,17 +862,30 @@ document.addEventListener('DOMContentLoaded', function () {
             // 呼叫 generate，並傳入目標分類和行號
             generate(dataObject, targetCategory, targetRowIdToGo);
             // 這裡不需要重設 selectedIndex 了
+
+            // --- 新增：成功載入後，更新進度詳情文字 ---
+            const progressDetailsSpan = document.getElementById('progressDetails');
+            if (progressDetailsSpan) {
+              progressDetailsSpan.textContent = ` - 第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+            }
+            // --- 新增結束 ---
           } else {
             console.error("無法找到對應的資料變數:", dataVarName || targetTableName);
             alert("載入選定進度時發生錯誤：找不到對應的資料集。");
+            if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
             this.selectedIndex = 0; // 錯誤時重設回預設選項
           }
         } else {
           // 這種情況比較少見，除非 localStorage 和下拉選單不同步
           console.error("找不到對應 value 的書籤:", selectedValue);
           alert("載入選定進度時發生錯誤：選項與儲存資料不符。");
+          if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
           this.selectedIndex = 0; // 錯誤時重設回預設選項
         }
+      } else {
+          // --- 新增：如果選擇了預設選項，也清除文字 ---
+          if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+          // --- 新增結束 ---
       }
     });
   } else {
@@ -1046,7 +1071,13 @@ function 大埔低升異化() {
 /* --- 新增開始：更新進度下拉選單 --- */
 function updateProgressDropdown() {
   const progressDropdown = document.getElementById('progressDropdown');
+  const progressDetailsSpan = document.getElementById('progressDetails'); // <--- 取得 span
+  
   if (!progressDropdown) return; // 如果找不到元素就返回
+
+  // --- 修改：只在需要時清除文字，例如在重建選項前 ---
+  // if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // <-- 暫時先不要在這裡清除
+
   const previousValue = progressDropdown.value; // <-- 新增：記住舊的 value
 
   // 讀取儲存的進度，若無則初始化為空陣列
@@ -1054,6 +1085,11 @@ function updateProgressDropdown() {
 
   // 清空現有選項 (保留第一個預設選項)
   progressDropdown.innerHTML = '<option selected disabled>學習進度</option>';
+  // --- 新增：如果沒有書籤，確保 details 是空的 ---
+  if (bookmarks.length === 0 && progressDetailsSpan) {
+      progressDetailsSpan.textContent = '';
+  }
+  // --- 新增結束 ---
 
   // 遍歷進度陣列，為每個進度產生一個選項
   bookmarks.forEach((bookmark, index) => {
@@ -1076,6 +1112,14 @@ function updateProgressDropdown() {
       // 如果找到了，就選中它
       newOptionToSelect.selected = true;
       console.log("恢復下拉選單選擇:", previousValue);
+      restoredSelection = true; // 標記成功恢復
+      
+      // --- 修改：如果恢復了選項，在這裡更新 details 文字 ---
+      const selectedBookmark = bookmarks.find(bm => (bm.tableName + '||' + bm.cat) === previousValue);
+      if (selectedBookmark && progressDetailsSpan) {
+          progressDetailsSpan.textContent = ` - 第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+      }
+      // --- 修改結束 ---
     } else {
       // 如果找不到了 (可能該進度被擠出前10名)，就顯示預設的 "學習進度"
       progressDropdown.selectedIndex = 0;
