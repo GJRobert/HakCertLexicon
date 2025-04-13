@@ -1,3 +1,50 @@
+/**
+ * 從表格名稱 (例如 "四縣基礎級") 解析出腔調和級別代碼。
+ * @param {string} tableName - 表格名稱 (例如 "四縣基礎級")
+ * @returns {object|null} 包含 dialect 和 level 代碼的物件，或在無法解析時返回 null。
+ */
+function extractDialectLevelCodes(tableName) {
+  if (!tableName || typeof tableName !== 'string') {
+    console.error('無效的 tableName:', tableName);
+    return null;
+  }
+
+  let dialectCode = '';
+  let levelCode = '';
+
+  // 提取腔調部分
+  if (tableName.startsWith('四縣')) {
+    dialectCode = 'si';
+  } else if (tableName.startsWith('海陸')) {
+    dialectCode = 'ha';
+  } else if (tableName.startsWith('大埔')) {
+    dialectCode = 'da';
+  } else if (tableName.startsWith('饒平')) {
+    dialectCode = 'rh';
+  } else if (tableName.startsWith('詔安')) {
+    dialectCode = 'zh';
+  } else {
+    console.error('無法從 tableName 解析腔調:', tableName);
+    return null; // 無法識別腔調
+  }
+
+  // 提取級別部分
+  if (tableName.endsWith('基礎級')) {
+    levelCode = '5'; // 基礎級對應代碼 5
+  } else if (tableName.endsWith('初級')) {
+    levelCode = '1'; // 初級對應代碼 1
+  } else if (tableName.endsWith('中級')) {
+    levelCode = '2'; // 中級對應代碼 2
+  } else if (tableName.endsWith('中高級')) {
+    levelCode = '3'; // 中高級對應代碼 3
+  } else {
+    console.error('無法從 tableName 解析級別:', tableName);
+    return null; // 無法識別級別
+  }
+
+  return { dialect: dialectCode, level: levelCode };
+}
+
 /* Gemini 老師。這種方式還是會因為 CORS 被擋下，無法偵測
 function checkAudioStatus(url) {
   return fetch(url, { method: 'HEAD' })
@@ -264,6 +311,10 @@ function buildTableAndSetupPlayback(
   }
 
   // 同歸隻處理 headerTextSpan 个區塊刪除。因為𫣆俚毋會再過用 span 顯示文字，係直接用下拉擇單哩。
+
+  // --- 修改：將 progressDetailsSpan 的宣告移到函式開頭 ---
+  const progressDetailsSpan = document.getElementById('progressDetails');
+  // --- 修改結束 ---
 
   console.log(
     `Building table for category: ${category}, autoPlayRow: ${autoPlayTargetRowId}`
@@ -765,6 +816,78 @@ function buildTableAndSetupPlayback(
       const targetRow = targetAnchor.closest('tr');
       if (targetRow) {
         console.log('Found target row for auto-play'); // 增加日誌
+
+        // --- 修改：無論如何都嘗試產生連結 ---
+        if (progressDetailsSpan) {
+          // 嘗試從 localStorage 找對應的書籤以取得百分比
+          const bookmarks =
+            JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+          const loadedBookmark = bookmarks.find(
+            (bm) =>
+              bm.tableName === dialectInfo.fullLvlName &&
+              bm.cat === category &&
+              bm.rowId === autoPlayTargetRowId
+          );
+
+          // 產生分享連結
+          const dialectLevelCodes = extractDialectLevelCodes(
+            dialectInfo.fullLvlName
+          ); // 使用 dialectInfo
+          if (dialectLevelCodes) {
+            // --- 修改 baseURL 計算方式 ---
+            let baseURL = '';
+            if (window.location.protocol === 'file:') {
+              baseURL = window.location.href.substring(
+                0,
+                window.location.href.lastIndexOf('/') + 1
+              );
+            } else {
+              let path = window.location.pathname;
+              baseURL =
+                window.location.origin +
+                path.substring(0, path.lastIndexOf('/') + 1);
+              if (!baseURL.endsWith('/')) {
+                baseURL += '/';
+              }
+            }
+            console.log('Calculated baseURL (on load):', baseURL); // 增加日誌檢查 baseURL
+            // --- 修改結束 ---
+            const encodedCategory = encodeURIComponent(category);
+            const shareURL = `${baseURL}index.html?dialect=${dialectLevelCodes.dialect}&level=${dialectLevelCodes.level}&category=${encodedCategory}&row=${autoPlayTargetRowId}`;
+
+            // 決定連結文字
+            const linkText = loadedBookmark
+              ? `第 ${loadedBookmark.rowId} 行 (${loadedBookmark.percentage}%)`
+              : `第 ${autoPlayTargetRowId} 行`;
+
+            // 建立連結元素
+            const linkElement = document.createElement('a');
+            linkElement.href = shareURL;
+            linkElement.textContent = linkText;
+            linkElement.target = '_blank'; // 可選：在新分頁開啟
+            linkElement.rel = 'noopener noreferrer'; // 安全性考量
+            linkElement.style.marginLeft = '5px'; // 加點間距
+
+            // 清空 span 並加入連結
+            progressDetailsSpan.innerHTML = '';
+            progressDetailsSpan.appendChild(linkElement);
+            console.log(
+              'Progress details updated with shareable link on load.'
+            );
+          } else {
+            // 如果無法產生連結，只顯示文字 (備用情況)
+            const textContent = loadedBookmark
+              ? `第 ${loadedBookmark.rowId} 行 (${loadedBookmark.percentage}%)`
+              : `第 ${autoPlayTargetRowId} 行`;
+            progressDetailsSpan.textContent = textContent;
+            console.error(
+              '無法從 tableName 解析腔調和級別代碼:',
+              dialectInfo.fullLvlName
+            );
+          }
+        }
+        // --- 修改結束 ---
+
         // 捲動到目標行
         targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -790,7 +913,18 @@ function buildTableAndSetupPlayback(
       }
     } else {
       console.warn('找不到要滾動到的目標行錨點:', autoPlayTargetRowId);
+      // --- 新增：如果找不到目標行，也清除進度詳情 ---
+      if (progressDetailsSpan) {
+        progressDetailsSpan.textContent = ''; // 清除文字
+      }
+      // --- 新增結束 ---
     }
+  } else {
+    // --- 如果不是自動播放 (例如只是切換分類)，清除進度詳情 ---
+    if (progressDetailsSpan) {
+      progressDetailsSpan.textContent = ''; // 清除文字
+    }
+    // --- 結束 ---
   }
 } // --- buildTableAndSetupPlayback 函式結束 ---
 
@@ -806,30 +940,32 @@ document.addEventListener('DOMContentLoaded', function () {
       document.body.scrollTop > 20 ||
       document.documentElement.scrollTop > 20
     ) {
-      backToTopButton.style.display = 'block';
+      if (backToTopButton) backToTopButton.style.display = 'block'; // Add null check
     } else {
-      backToTopButton.style.display = 'none';
+      if (backToTopButton) backToTopButton.style.display = 'none'; // Add null check
     }
   };
 
   // 點擊按鈕時回到頂部
-  backToTopButton.addEventListener('click', function () {
-    document.body.scrollTop = 0; // For Safari
-    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
-  });
+  if (backToTopButton) {
+    // Add null check
+    backToTopButton.addEventListener('click', function () {
+      document.body.scrollTop = 0; // For Safari
+      document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    });
+  }
 
-  // --- 新增開始：下拉選單選擇事件 ---
+  // --- 下拉選單選擇事件 ---
   const progressDropdown = document.getElementById('progressDropdown');
+  const progressDetailsSpan = document.getElementById('progressDetails'); // 移到這裡方便共用
+
   if (progressDropdown) {
     progressDropdown.addEventListener('change', function (event) {
-      const selectedValue = this.value; // 直接用 selectedValue 變數接收 this.value
+      const selectedValue = this.value;
 
-      // 檢查是否選了有效的進度 (value 不是預設的 "學習進度" 或空值)
       if (selectedValue && selectedValue !== '學習進度') {
         const bookmarks =
           JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
-
-        // 用 selectedValue (例如 "四縣基礎級||人體與醫療") 來尋找對應的書籤物件
         const selectedBookmark = bookmarks.find(
           (bm) => bm.tableName + '||' + bm.cat === selectedValue
         );
@@ -841,54 +977,203 @@ document.addEventListener('DOMContentLoaded', function () {
             'Bookmark:',
             selectedBookmark
           );
-          // 從書籤資訊中獲取所需參數
           const targetTableName = selectedBookmark.tableName;
           const targetCategory = selectedBookmark.cat;
           const targetRowIdToGo = selectedBookmark.rowId;
-
-          // 將表格名稱映射回資料變數名稱
           const dataVarName = mapTableNameToDataVar(targetTableName);
 
           if (dataVarName && typeof window[dataVarName] !== 'undefined') {
-            const dataObject = window[dataVarName]; // 取得對應的詞彙資料物件
+            const dataObject = window[dataVarName];
             console.log(
-              `Calling generate for ${dataVarName}, category: ${targetCategory}, row: ${targetRowIdToGo}`
+              `Calling generate from dropdown for ${dataVarName}, category: ${targetCategory}, row: ${targetRowIdToGo}`
             );
-            // 呼叫 generate，並傳入目標分類和行號
             generate(dataObject, targetCategory, targetRowIdToGo);
-            // 這裡不需要重設 selectedIndex 了
 
-            // --- 新增：成功載入後，更新進度詳情文字 ---
-            const progressDetailsSpan =
-              document.getElementById('progressDetails');
+            // --- 更新進度詳情為連結 ---
             if (progressDetailsSpan) {
-              progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+              const dialectLevelCodes =
+                extractDialectLevelCodes(targetTableName);
+              if (dialectLevelCodes) {
+                let baseURL = '';
+                if (window.location.protocol === 'file:') {
+                  baseURL = window.location.href.substring(
+                    0,
+                    window.location.href.lastIndexOf('/') + 1
+                  );
+                } else {
+                  let path = window.location.pathname;
+                  baseURL =
+                    window.location.origin +
+                    path.substring(0, path.lastIndexOf('/') + 1);
+                  if (!baseURL.endsWith('/')) {
+                    baseURL += '/';
+                  }
+                }
+                const encodedCategory = encodeURIComponent(targetCategory);
+                const shareURL = `${baseURL}index.html?dialect=${dialectLevelCodes.dialect}&level=${dialectLevelCodes.level}&category=${encodedCategory}&row=${targetRowIdToGo}`;
+
+                const linkElement = document.createElement('a');
+                linkElement.href = shareURL;
+                linkElement.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+                linkElement.target = '_blank';
+                linkElement.rel = 'noopener noreferrer';
+                linkElement.style.marginLeft = '5px';
+
+                progressDetailsSpan.innerHTML = '';
+                progressDetailsSpan.appendChild(linkElement);
+                console.log(
+                  'Progress details updated with shareable link from dropdown.'
+                );
+              } else {
+                progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`; // Fallback text
+                console.error(
+                  '無法從 tableName 解析腔調和級別代碼:',
+                  targetTableName
+                );
+              }
             }
-            // --- 新增結束 ---
+            // --- 更新結束 ---
           } else {
             console.error(
               '無法找到對應的資料變數:',
               dataVarName || targetTableName
             );
             alert('載入選定進度時發生錯誤：找不到對應的資料集。');
-            if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
-            this.selectedIndex = 0; // 錯誤時重設回預設選項
+            if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+            this.selectedIndex = 0;
           }
         } else {
-          // 這種情況比較少見，除非 localStorage 和下拉選單不同步
           console.error('找不到對應 value 的書籤:', selectedValue);
           alert('載入選定進度時發生錯誤：選項與儲存資料不符。');
-          if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
-          this.selectedIndex = 0; // 錯誤時重設回預設選項
+          if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+          this.selectedIndex = 0;
         }
       } else {
-        // --- 新增：如果選擇了預設選項，也清除文字 ---
         if (progressDetailsSpan) progressDetailsSpan.textContent = '';
-        // --- 新增結束 ---
       }
     });
   } else {
     console.error('找不到 #progressDropdown 元素');
+  }
+
+  // --- 新增：頁面載入時解析 URL 參數 ---
+  const urlParams = new URLSearchParams(window.location.search);
+  const dialectParam = urlParams.get('dialect');
+  const levelParam = urlParams.get('level');
+  const categoryParam = urlParams.get('category'); // 這是編碼過的
+  const rowParam = urlParams.get('row');
+
+  if (dialectParam && levelParam && categoryParam && rowParam) {
+    console.log(
+      'URL parameters detected on load:',
+      dialectParam,
+      levelParam,
+      categoryParam,
+      rowParam
+    );
+
+    // 將 URL 參數映射回表格名稱 (例如 "da", "2" -> "大埔中級")
+    let dialectName = '';
+    let levelName = '';
+    switch (dialectParam) {
+      case 'si':
+        dialectName = '四縣';
+        break;
+      case 'ha':
+        dialectName = '海陸';
+        break;
+      case 'da':
+        dialectName = '大埔';
+        break;
+      case 'rh':
+        dialectName = '饒平';
+        break;
+      case 'zh':
+        dialectName = '詔安';
+        break;
+    }
+    switch (levelParam) {
+      case '5':
+        levelName = '基礎級';
+        break;
+      case '1':
+        levelName = '初級';
+        break;
+      case '2':
+        levelName = '中級';
+        break;
+      case '3':
+        levelName = '中高級';
+        break;
+    }
+
+    if (dialectName && levelName) {
+      const targetTableName = dialectName + levelName;
+      const dataVarName = mapTableNameToDataVar(targetTableName); // 取得對應的資料變數名稱，例如 '大中'
+
+      if (dataVarName && typeof window[dataVarName] !== 'undefined') {
+        const dataObject = window[dataVarName]; // 取得對應的詞彙資料物件
+        const decodedCategory = decodeURIComponent(categoryParam); // **解碼 category**
+
+        console.log(
+          `Calling generate on load for ${dataVarName}, category: ${decodedCategory}, row: ${rowParam}`
+        );
+        // 呼叫 generate，並傳入目標分類和行號
+        generate(dataObject, decodedCategory, rowParam);
+
+        // --- 新增：如果 URL 有參數，也嘗試更新下拉選單的選中狀態 ---
+        if (progressDropdown) {
+          const targetValue = targetTableName + '||' + decodedCategory;
+          const optionToSelect = progressDropdown.querySelector(
+            `option[value="${targetValue}"]`
+          );
+          if (optionToSelect) {
+            optionToSelect.selected = true;
+            console.log(
+              'Selected corresponding option in dropdown based on URL params.'
+            );
+          } else {
+            // 如果下拉選單中沒有完全匹配的項 (可能因為不是最新的10條記錄)
+            // 保持預設選項，但 progressDetails 仍然會顯示 (由 buildTableAndSetupPlayback 處理)
+            progressDropdown.selectedIndex = 0;
+            console.log(
+              'URL params specified a bookmark not currently in the top 10 dropdown options.'
+            );
+          }
+        }
+        // --- 新增結束 ---
+      } else {
+        console.error(
+          '無法找到對應的資料變數:',
+          dataVarName || targetTableName
+        );
+        // 可以在這裡顯示錯誤訊息或預設內容
+        const contentContainer = document.getElementById('generated');
+        if (contentContainer)
+          contentContainer.innerHTML = '<p>載入資料時發生錯誤。</p>';
+        if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
+      }
+    } else {
+      console.error(
+        '無法從 URL 參數映射腔調或級別名稱:',
+        dialectParam,
+        levelParam
+      );
+      if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
+    }
+  } else {
+    console.log('No valid URL parameters found for auto-generation on load.');
+    // 如果沒有 URL 參數，顯示提示訊息
+    const contentContainer = document.getElementById('generated');
+    if (contentContainer && contentContainer.innerHTML.trim() === '') {
+      // 只有在內容為空時才顯示提示
+      contentContainer.innerHTML =
+        '<p style="text-align: center; margin-top: 20px;">請點擊上方連結選擇腔調與級別。</p>';
+    }
+    // 確保 header 控制鈕被移除
+    const header = document.getElementById('header');
+    header?.querySelector('#audioControls')?.remove(); // 使用 Optional Chaining
+    if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
   }
   // --- 新增結束 ---
 });
@@ -1186,6 +1471,7 @@ function saveBookmark(rowId, percentage, category, tableName) {
     timestamp: Date.now(),
   };
 
+  // --- (保留現有的移除、新增、刪除舊紀錄邏輯) ---
   // 1. 移除已存在的完全相同的紀錄 (同表格同類別)
   const existingIndex = bookmarks.findIndex(
     (bm) => bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat
@@ -1194,20 +1480,16 @@ function saveBookmark(rowId, percentage, category, tableName) {
     bookmarks.splice(existingIndex, 1);
     console.log(`移除已存在的紀錄: ${tableName} - ${category}`);
   }
-
   // 2. 將新紀錄加到最前面
   bookmarks.unshift(newBookmark);
   console.log(`新增紀錄: ${tableName} - ${category} 在行 ${rowId}`);
-
   // 3. 如果紀錄超過 10 筆，執行刪除邏輯
   if (bookmarks.length > 10) {
+    // ... (保留刪除邏輯) ...
     console.log('紀錄超過 10 筆，執行刪除邏輯。');
     let indexToDelete = -1;
-    // 從最舊的紀錄開始找 (索引值最大)
     for (let i = bookmarks.length - 1; i >= 0; i--) {
-      // 跳過剛剛加入的新紀錄 (索引為 0)
       if (i === 0) continue;
-      // 找到同表格但不同類別的紀錄
       if (
         bookmarks[i].tableName === newBookmark.tableName &&
         bookmarks[i].cat !== newBookmark.cat
@@ -1216,46 +1498,81 @@ function saveBookmark(rowId, percentage, category, tableName) {
         console.log(
           `找到要刪除的同表格不同類別紀錄: 索引 ${i}, ${bookmarks[i].tableName} - ${bookmarks[i].cat}`
         );
-        break; // 找到最舊的就停止
+        break;
       }
     }
-
     if (indexToDelete > -1) {
-      // 如果找到符合條件的，刪除該筆
       console.log(`刪除特定紀錄於索引 ${indexToDelete}`);
       bookmarks.splice(indexToDelete, 1);
     } else {
-      // 如果沒找到，則刪除最舊的一筆 (現在位於索引 10 的位置)
       console.log('未找到符合條件的紀錄，刪除最舊的一筆。');
-      bookmarks.splice(10, 1); // 移除第 11 筆紀錄 (索引為 10)
+      bookmarks.splice(10, 1);
     }
   }
-
   // 4. 儲存更新後的紀錄 (最多 10 筆)
   localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
   updateProgressDropdown(); // 更新下拉選單顯示
 
-  // --- 新增：強制選中剛儲存的進度並更新詳情 ---
+  // --- 修改：強制選中剛儲存的進度並更新詳情為連結 ---
   const progressDropdown = document.getElementById('progressDropdown');
   const progressDetailsSpan = document.getElementById('progressDetails');
 
-  if (progressDropdown && progressDropdown.options.length > 1) {
-    // 確保下拉選單存在且有實際選項 (除了預設選項)
-    progressDropdown.selectedIndex = 1; // 選中第一個實際進度 (索引為 1)
-    console.log('Dropdown selection forced to index 1 (newest).');
+  if (progressDropdown && progressDetailsSpan) {
+    if (bookmarks.length > 0) {
+      // 確保有書籤
+      progressDropdown.selectedIndex = 1; // 選中第一個實際進度 (索引為 1)
+      console.log('Dropdown selection forced to index 1 (newest).');
 
-    if (progressDetailsSpan) {
-      // 使用 newBookmark 的資訊更新詳情
-      progressDetailsSpan.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
-      console.log('Progress details updated for newest bookmark.');
+      // --- 修改 baseURL 計算方式 ---
+      let baseURL = '';
+      if (window.location.protocol === 'file:') {
+        // For local files, get the directory path from href
+        baseURL = window.location.href.substring(
+          0,
+          window.location.href.lastIndexOf('/') + 1
+        );
+      } else {
+        // For http/https, combine origin and directory path (removing filename)
+        let path = window.location.pathname;
+        baseURL =
+          window.location.origin + path.substring(0, path.lastIndexOf('/') + 1);
+        // Ensure baseURL ends with a slash if pathname was just '/'
+        if (!baseURL.endsWith('/')) {
+          baseURL += '/';
+        }
+      }
+      console.log('Calculated baseURL:', baseURL); // 增加日誌檢查 baseURL
+      // --- 修改結束 ---
+
+      // 產生分享連結
+      const dialectLevelCodes = extractDialectLevelCodes(tableName);
+      if (dialectLevelCodes) {
+        // const baseURL = window.location.origin + window.location.pathname;
+        const encodedCategory = encodeURIComponent(category);
+        const shareURL = `${baseURL}index.html?dialect=${dialectLevelCodes.dialect}&level=${dialectLevelCodes.level}&category=${encodedCategory}&row=${rowId}`;
+
+        // 建立連結元素
+        const linkElement = document.createElement('a');
+        linkElement.href = shareURL;
+        linkElement.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
+        linkElement.target = '_blank'; // 可選：在新分頁開啟
+        linkElement.rel = 'noopener noreferrer'; // 安全性考量
+        linkElement.style.marginLeft = '5px'; // 加點間距
+
+        // 清空 span 並加入連結
+        progressDetailsSpan.innerHTML = '';
+        progressDetailsSpan.appendChild(linkElement);
+        console.log('Progress details updated with shareable link.');
+      } else {
+        // 如果無法產生連結，只顯示文字
+        progressDetailsSpan.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
+        console.error('無法從 tableName 解析腔調和級別代碼:', tableName);
+      }
+    } else {
+      // 如果沒有書籤了，清空詳情
+      progressDetailsSpan.textContent = '';
+      progressDropdown.selectedIndex = 0; // 確保選回預設
     }
-  } else if (
-    progressDropdown &&
-    progressDropdown.options.length <= 1 &&
-    progressDetailsSpan
-  ) {
-    // 如果只有預設選項或沒有選項，清空詳情
-    progressDetailsSpan.textContent = '';
   }
-  // --- 新增結束 ---
+  // --- 修改結束 ---
 }
