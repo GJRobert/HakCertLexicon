@@ -90,14 +90,13 @@ function csvToArray(str, delimiter = ',') {
 
 // 加入新的可選參數：initialCategory, targetRowId
 function generate(content, initialCategory = null, targetRowId = null) {
-
   // --- 新增：如果不是從下拉選單觸發，就清除進度詳情 ---
   if (!initialCategory) {
-      const progressDetailsSpan = document.getElementById('progressDetails');
-      if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+    const progressDetailsSpan = document.getElementById('progressDetails');
+    if (progressDetailsSpan) progressDetailsSpan.textContent = '';
   }
   // --- 新增結束 ---
-  
+
   // --- 保留 generate 開頭的變數定義和分析腔別級別的邏輯 ---
   console.log('Generate called for:', content.name); // 增加日誌
   let 腔 = '';
@@ -239,8 +238,9 @@ function generate(content, initialCategory = null, targetRowId = null) {
     // 目前行為：不預選，讓使用者點選。
     console.log('No initial category specified.'); // 增加日誌
     // 清除舊表格內容和 radio button 選擇
-    radios.forEach(radio => radio.checked = false);
-    contentContainer.innerHTML = '<p style="text-align: center; margin-top: 20px;">請選擇一個類別來顯示詞彙。</p>';
+    radios.forEach((radio) => (radio.checked = false));
+    contentContainer.innerHTML =
+      '<p style="text-align: center; margin-top: 20px;">請選擇一個類別來顯示詞彙。</p>';
     // **新增這行**：移除 header 中的播放控制鈕
     header?.querySelector('#audioControls')?.remove(); // 使用 Optional Chaining 避免錯誤
   }
@@ -595,7 +595,6 @@ function buildTableAndSetupPlayback(
       });
     }
   });
-  
 
   // --- 修改：尋找或建立 Header 內的播放控制按鈕 ---
   let audioControlsDiv = header.querySelector('#audioControls');
@@ -827,13 +826,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // 檢查是否選了有效的進度 (value 不是預設的 "學習進度" 或空值)
       if (selectedValue && selectedValue !== '學習進度') {
-        const bookmarks = JSON.parse(localStorage.getItem("hakkaBookmarks")) || [];
+        const bookmarks =
+          JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
 
         // 用 selectedValue (例如 "四縣基礎級||人體與醫療") 來尋找對應的書籤物件
-        const selectedBookmark = bookmarks.find(bm => (bm.tableName + '||' + bm.cat) === selectedValue);
+        const selectedBookmark = bookmarks.find(
+          (bm) => bm.tableName + '||' + bm.cat === selectedValue
+        );
 
         if (selectedBookmark) {
-          console.log("Dropdown selected (value):", selectedValue, "Bookmark:", selectedBookmark);
+          console.log(
+            'Dropdown selected (value):',
+            selectedValue,
+            'Bookmark:',
+            selectedBookmark
+          );
           // 從書籤資訊中獲取所需參數
           const targetTableName = selectedBookmark.tableName;
           const targetCategory = selectedBookmark.cat;
@@ -844,34 +851,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
           if (dataVarName && typeof window[dataVarName] !== 'undefined') {
             const dataObject = window[dataVarName]; // 取得對應的詞彙資料物件
-            console.log(`Calling generate for ${dataVarName}, category: ${targetCategory}, row: ${targetRowIdToGo}`);
+            console.log(
+              `Calling generate for ${dataVarName}, category: ${targetCategory}, row: ${targetRowIdToGo}`
+            );
             // 呼叫 generate，並傳入目標分類和行號
             generate(dataObject, targetCategory, targetRowIdToGo);
             // 這裡不需要重設 selectedIndex 了
 
             // --- 新增：成功載入後，更新進度詳情文字 ---
-            const progressDetailsSpan = document.getElementById('progressDetails');
+            const progressDetailsSpan =
+              document.getElementById('progressDetails');
             if (progressDetailsSpan) {
               progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
             }
             // --- 新增結束 ---
           } else {
-            console.error("無法找到對應的資料變數:", dataVarName || targetTableName);
-            alert("載入選定進度時發生錯誤：找不到對應的資料集。");
+            console.error(
+              '無法找到對應的資料變數:',
+              dataVarName || targetTableName
+            );
+            alert('載入選定進度時發生錯誤：找不到對應的資料集。');
             if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
             this.selectedIndex = 0; // 錯誤時重設回預設選項
           }
         } else {
           // 這種情況比較少見，除非 localStorage 和下拉選單不同步
-          console.error("找不到對應 value 的書籤:", selectedValue);
-          alert("載入選定進度時發生錯誤：選項與儲存資料不符。");
+          console.error('找不到對應 value 的書籤:', selectedValue);
+          alert('載入選定進度時發生錯誤：選項與儲存資料不符。');
           if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
           this.selectedIndex = 0; // 錯誤時重設回預設選項
         }
       } else {
-          // --- 新增：如果選擇了預設選項，也清除文字 ---
-          if (progressDetailsSpan) progressDetailsSpan.textContent = '';
-          // --- 新增結束 ---
+        // --- 新增：如果選擇了預設選項，也清除文字 ---
+        if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+        // --- 新增結束 ---
       }
     });
   } else {
@@ -1058,7 +1071,7 @@ function 大埔低升異化() {
 function updateProgressDropdown() {
   const progressDropdown = document.getElementById('progressDropdown');
   const progressDetailsSpan = document.getElementById('progressDetails'); // <--- 取得 span
-  
+
   if (!progressDropdown) return; // 如果找不到元素就返回
 
   // --- 修改：只在需要時清除文字，例如在重建選項前 ---
@@ -1073,7 +1086,7 @@ function updateProgressDropdown() {
   progressDropdown.innerHTML = '<option selected disabled>學習進度</option>';
   // --- 新增：如果沒有書籤，確保 details 是空的 ---
   if (bookmarks.length === 0 && progressDetailsSpan) {
-      progressDetailsSpan.textContent = '';
+    progressDetailsSpan.textContent = '';
   }
   // --- 新增結束 ---
 
@@ -1093,23 +1106,27 @@ function updateProgressDropdown() {
   // --- 新增：嘗試恢復之前的選中狀態 ---
   if (previousValue && previousValue !== '學習進度') {
     // 尋找具有相同 value 的新選項
-    const newOptionToSelect = progressDropdown.querySelector(`option[value="${previousValue}"]`);
+    const newOptionToSelect = progressDropdown.querySelector(
+      `option[value="${previousValue}"]`
+    );
     if (newOptionToSelect) {
       // 如果找到了，就選中它
       newOptionToSelect.selected = true;
-      console.log("恢復下拉選單選擇:", previousValue);
+      console.log('恢復下拉選單選擇:', previousValue);
       restoredSelection = true; // 標記成功恢復
-      
+
       // --- 修改：如果恢復了選項，在這裡更新 details 文字 ---
-      const selectedBookmark = bookmarks.find(bm => (bm.tableName + '||' + bm.cat) === previousValue);
+      const selectedBookmark = bookmarks.find(
+        (bm) => bm.tableName + '||' + bm.cat === previousValue
+      );
       if (selectedBookmark && progressDetailsSpan) {
-          progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+        progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
       }
       // --- 修改結束 ---
     } else {
       // 如果找不到了 (可能該進度被擠出前10名)，就顯示預設的 "學習進度"
       progressDropdown.selectedIndex = 0;
-      console.log("先前選擇的項目已不在列表中，重設下拉選單");
+      console.log('先前選擇的項目已不在列表中，重設下拉選單');
     }
   } else {
     // 如果之前沒有選擇，或是選的是預設值，保持預設值被選中
@@ -1160,75 +1177,85 @@ function mapTableNameToDataVar(tableName) {
  * @param {string} tableName - 當前表格名稱 (腔調級別)
  */
 function saveBookmark(rowId, percentage, category, tableName) {
-    let bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
-    const newBookmark = {
-        rowId: rowId,
-        percentage: percentage,
-        cat: category,
-        tableName: tableName,
-        timestamp: Date.now(),
-    };
+  let bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+  const newBookmark = {
+    rowId: rowId,
+    percentage: percentage,
+    cat: category,
+    tableName: tableName,
+    timestamp: Date.now(),
+  };
 
-    // 1. 移除已存在的完全相同的紀錄 (同表格同類別)
-    const existingIndex = bookmarks.findIndex(
-        (bm) => bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat
-    );
-    if (existingIndex > -1) {
-        bookmarks.splice(existingIndex, 1);
-        console.log(`移除已存在的紀錄: ${tableName} - ${category}`);
+  // 1. 移除已存在的完全相同的紀錄 (同表格同類別)
+  const existingIndex = bookmarks.findIndex(
+    (bm) => bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat
+  );
+  if (existingIndex > -1) {
+    bookmarks.splice(existingIndex, 1);
+    console.log(`移除已存在的紀錄: ${tableName} - ${category}`);
+  }
+
+  // 2. 將新紀錄加到最前面
+  bookmarks.unshift(newBookmark);
+  console.log(`新增紀錄: ${tableName} - ${category} 在行 ${rowId}`);
+
+  // 3. 如果紀錄超過 10 筆，執行刪除邏輯
+  if (bookmarks.length > 10) {
+    console.log('紀錄超過 10 筆，執行刪除邏輯。');
+    let indexToDelete = -1;
+    // 從最舊的紀錄開始找 (索引值最大)
+    for (let i = bookmarks.length - 1; i >= 0; i--) {
+      // 跳過剛剛加入的新紀錄 (索引為 0)
+      if (i === 0) continue;
+      // 找到同表格但不同類別的紀錄
+      if (
+        bookmarks[i].tableName === newBookmark.tableName &&
+        bookmarks[i].cat !== newBookmark.cat
+      ) {
+        indexToDelete = i;
+        console.log(
+          `找到要刪除的同表格不同類別紀錄: 索引 ${i}, ${bookmarks[i].tableName} - ${bookmarks[i].cat}`
+        );
+        break; // 找到最舊的就停止
+      }
     }
 
-    // 2. 將新紀錄加到最前面
-    bookmarks.unshift(newBookmark);
-    console.log(`新增紀錄: ${tableName} - ${category} 在行 ${rowId}`);
-
-    // 3. 如果紀錄超過 10 筆，執行刪除邏輯
-    if (bookmarks.length > 10) {
-        console.log("紀錄超過 10 筆，執行刪除邏輯。");
-        let indexToDelete = -1;
-        // 從最舊的紀錄開始找 (索引值最大)
-        for (let i = bookmarks.length - 1; i >= 0; i--) {
-             // 跳過剛剛加入的新紀錄 (索引為 0)
-             if (i === 0) continue;
-            // 找到同表格但不同類別的紀錄
-            if (bookmarks[i].tableName === newBookmark.tableName && bookmarks[i].cat !== newBookmark.cat) {
-                indexToDelete = i;
-                console.log(`找到要刪除的同表格不同類別紀錄: 索引 ${i}, ${bookmarks[i].tableName} - ${bookmarks[i].cat}`);
-                break; // 找到最舊的就停止
-            }
-        }
-
-        if (indexToDelete > -1) {
-            // 如果找到符合條件的，刪除該筆
-            console.log(`刪除特定紀錄於索引 ${indexToDelete}`);
-            bookmarks.splice(indexToDelete, 1);
-        } else {
-            // 如果沒找到，則刪除最舊的一筆 (現在位於索引 10 的位置)
-            console.log("未找到符合條件的紀錄，刪除最舊的一筆。");
-            bookmarks.splice(10, 1); // 移除第 11 筆紀錄 (索引為 10)
-        }
+    if (indexToDelete > -1) {
+      // 如果找到符合條件的，刪除該筆
+      console.log(`刪除特定紀錄於索引 ${indexToDelete}`);
+      bookmarks.splice(indexToDelete, 1);
+    } else {
+      // 如果沒找到，則刪除最舊的一筆 (現在位於索引 10 的位置)
+      console.log('未找到符合條件的紀錄，刪除最舊的一筆。');
+      bookmarks.splice(10, 1); // 移除第 11 筆紀錄 (索引為 10)
     }
+  }
 
-    // 4. 儲存更新後的紀錄 (最多 10 筆)
-    localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
-    updateProgressDropdown(); // 更新下拉選單顯示
+  // 4. 儲存更新後的紀錄 (最多 10 筆)
+  localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
+  updateProgressDropdown(); // 更新下拉選單顯示
 
-    // --- 新增：強制選中剛儲存的進度並更新詳情 ---
-    const progressDropdown = document.getElementById('progressDropdown');
-    const progressDetailsSpan = document.getElementById('progressDetails');
+  // --- 新增：強制選中剛儲存的進度並更新詳情 ---
+  const progressDropdown = document.getElementById('progressDropdown');
+  const progressDetailsSpan = document.getElementById('progressDetails');
 
-    if (progressDropdown && progressDropdown.options.length > 1) { // 確保下拉選單存在且有實際選項 (除了預設選項)
-        progressDropdown.selectedIndex = 1; // 選中第一個實際進度 (索引為 1)
-        console.log("Dropdown selection forced to index 1 (newest).");
+  if (progressDropdown && progressDropdown.options.length > 1) {
+    // 確保下拉選單存在且有實際選項 (除了預設選項)
+    progressDropdown.selectedIndex = 1; // 選中第一個實際進度 (索引為 1)
+    console.log('Dropdown selection forced to index 1 (newest).');
 
-        if (progressDetailsSpan) {
-            // 使用 newBookmark 的資訊更新詳情
-            progressDetailsSpan.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
-            console.log("Progress details updated for newest bookmark.");
-        }
-    } else if (progressDropdown && progressDropdown.options.length <= 1 && progressDetailsSpan) {
-          // 如果只有預設選項或沒有選項，清空詳情
-          progressDetailsSpan.textContent = '';
+    if (progressDetailsSpan) {
+      // 使用 newBookmark 的資訊更新詳情
+      progressDetailsSpan.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
+      console.log('Progress details updated for newest bookmark.');
     }
-    // --- 新增結束 ---
+  } else if (
+    progressDropdown &&
+    progressDropdown.options.length <= 1 &&
+    progressDetailsSpan
+  ) {
+    // 如果只有預設選項或沒有選項，清空詳情
+    progressDetailsSpan.textContent = '';
+  }
+  // --- 新增結束 ---
 }
