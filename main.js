@@ -542,36 +542,30 @@ function buildTableAndSetupPlayback(
   // --- 設定書籤按鈕和音檔播放的進度儲存邏輯 ---
   const currentTableNameForBookmark = dialectInfo.fullLvlName;
   const currentCategoryForBookmark = category;
+
   bookmarkButtons.forEach((button) => {
     button.addEventListener('click', function () {
-      // ... (儲存進度的邏輯不變，使用 currentTableNameForBookmark 和 currentCategoryForBookmark) ...
       const rowId = this.dataset.rowId;
       let rowNum = rowId.replace(/^0+/, '');
-      let percentage = (rowNum / bookmarkButtons.length) * 100;
+      // 確保 bookmarkButtonsList 在這裡可用，或者傳遞總行數
+      let totalRows = bookmarkButtonsList.length; // 假設 bookmarkButtonsList 包含所有按鈕
+      let percentage = (rowNum / totalRows) * 100;
       let percentageFixed = percentage.toFixed(2);
 
-      let bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
-      const newBookmark = {
-        rowId: rowId,
-        percentage: percentageFixed,
-        cat: currentCategoryForBookmark,
-        tableName: currentTableNameForBookmark,
-        timestamp: Date.now(),
-      };
-      const existingIndex = bookmarks.findIndex(
-        (bm) =>
-          bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat
+      // --- 修改開始 ---
+      // 呼叫新的儲存函式
+      saveBookmark(
+        rowId,
+        percentageFixed,
+        currentCategoryForBookmark,
+        currentTableNameForBookmark
       );
-      if (existingIndex > -1) {
-        bookmarks.splice(existingIndex, 1);
-      }
-      bookmarks.unshift(newBookmark);
-      bookmarks = bookmarks.slice(0, 10);
-      localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
-      console.log(`書籤 ${rowId} 已儲存至列表`);
-      updateProgressDropdown(); // 更新下拉選單
+      // --- 修改結束 ---
+
+      console.log(`書籤 ${rowId} 已儲存至列表`); // 可以保留這個 log
     });
   });
+
   audioElements.forEach((audio) => {
     // 檢查是否為可播放的音檔 (非 data-skip)
     if (audio.dataset.skip !== 'true') {
@@ -581,35 +575,27 @@ function buildTableAndSetupPlayback(
         );
         if (!rowButton) return;
         const rowId = rowButton.dataset.rowId;
-        // ... (儲存進度的邏輯與上面書籤按鈕類似) ...
         let rowNum = rowId.replace(/^0+/, '');
-        let percentage = (rowNum / bookmarkButtons.length) * 100;
+        // 確保 bookmarkButtonsList 在這裡可用，或者傳遞總行數
+        let totalRows = bookmarkButtonsList.length; // 假設 bookmarkButtonsList 包含所有按鈕
+        let percentage = (rowNum / totalRows) * 100;
         let percentageFixed = percentage.toFixed(2);
 
-        let bookmarks =
-          JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
-        const newBookmark = {
-          rowId: rowId,
-          percentage: percentageFixed,
-          cat: currentCategoryForBookmark,
-          tableName: currentTableNameForBookmark,
-          timestamp: Date.now(),
-        };
-        const existingIndex = bookmarks.findIndex(
-          (bm) =>
-            bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat
+        // --- 修改開始 ---
+        // 呼叫新的儲存函式
+        saveBookmark(
+          rowId,
+          percentageFixed,
+          currentCategoryForBookmark,
+          currentTableNameForBookmark
         );
-        if (existingIndex > -1) {
-          bookmarks.splice(existingIndex, 1);
-        }
-        bookmarks.unshift(newBookmark);
-        bookmarks = bookmarks.slice(0, 10);
-        localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
-        console.log(`播放觸發進度儲存至列表：${rowId}`);
-        updateProgressDropdown(); // 更新下拉選單
+        // --- 修改結束 ---
+
+        console.log(`播放觸發進度儲存至列表：${rowId}`); // 可以保留這個 log
       });
     }
   });
+  
 
   // --- 修改：尋找或建立 Header 內的播放控制按鈕 ---
   let audioControlsDiv = header.querySelector('#audioControls');
@@ -866,7 +852,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // --- 新增：成功載入後，更新進度詳情文字 ---
             const progressDetailsSpan = document.getElementById('progressDetails');
             if (progressDetailsSpan) {
-              progressDetailsSpan.textContent = ` - 第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+              progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
             }
             // --- 新增結束 ---
           } else {
@@ -1117,7 +1103,7 @@ function updateProgressDropdown() {
       // --- 修改：如果恢復了選項，在這裡更新 details 文字 ---
       const selectedBookmark = bookmarks.find(bm => (bm.tableName + '||' + bm.cat) === previousValue);
       if (selectedBookmark && progressDetailsSpan) {
-          progressDetailsSpan.textContent = ` - 第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+          progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
       }
       // --- 修改結束 ---
     } else {
@@ -1165,3 +1151,65 @@ function mapTableNameToDataVar(tableName) {
   return mapping[tableName];
 }
 /* --- 新增結束 --- */
+
+/**
+ * 儲存學習進度書籤，並根據規則刪除舊紀錄。
+ * @param {string} rowId - 當前行的 ID (例如 '001')
+ * @param {string} percentage - 學習進度百分比 (字串)
+ * @param {string} category - 當前類別名稱
+ * @param {string} tableName - 當前表格名稱 (腔調級別)
+ */
+function saveBookmark(rowId, percentage, category, tableName) {
+    let bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+    const newBookmark = {
+        rowId: rowId,
+        percentage: percentage,
+        cat: category,
+        tableName: tableName,
+        timestamp: Date.now(),
+    };
+
+    // 1. 移除已存在的完全相同的紀錄 (同表格同類別)
+    const existingIndex = bookmarks.findIndex(
+        (bm) => bm.tableName === newBookmark.tableName && bm.cat === newBookmark.cat
+    );
+    if (existingIndex > -1) {
+        bookmarks.splice(existingIndex, 1);
+        console.log(`移除已存在的紀錄: ${tableName} - ${category}`);
+    }
+
+    // 2. 將新紀錄加到最前面
+    bookmarks.unshift(newBookmark);
+    console.log(`新增紀錄: ${tableName} - ${category} 在行 ${rowId}`);
+
+    // 3. 如果紀錄超過 10 筆，執行刪除邏輯
+    if (bookmarks.length > 10) {
+        console.log("紀錄超過 10 筆，執行刪除邏輯。");
+        let indexToDelete = -1;
+        // 從最舊的紀錄開始找 (索引值最大)
+        for (let i = bookmarks.length - 1; i >= 0; i--) {
+             // 跳過剛剛加入的新紀錄 (索引為 0)
+             if (i === 0) continue;
+            // 找到同表格但不同類別的紀錄
+            if (bookmarks[i].tableName === newBookmark.tableName && bookmarks[i].cat !== newBookmark.cat) {
+                indexToDelete = i;
+                console.log(`找到要刪除的同表格不同類別紀錄: 索引 ${i}, ${bookmarks[i].tableName} - ${bookmarks[i].cat}`);
+                break; // 找到最舊的就停止
+            }
+        }
+
+        if (indexToDelete > -1) {
+            // 如果找到符合條件的，刪除該筆
+            console.log(`刪除特定紀錄於索引 ${indexToDelete}`);
+            bookmarks.splice(indexToDelete, 1);
+        } else {
+            // 如果沒找到，則刪除最舊的一筆 (現在位於索引 10 的位置)
+            console.log("未找到符合條件的紀錄，刪除最舊的一筆。");
+            bookmarks.splice(10, 1); // 移除第 11 筆紀錄 (索引為 10)
+        }
+    }
+
+    // 4. 儲存更新後的紀錄 (最多 10 筆)
+    localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
+    updateProgressDropdown(); // 更新下拉選單顯示
+}
