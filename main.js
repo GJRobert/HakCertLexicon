@@ -1626,3 +1626,50 @@ function saveBookmark(rowId, percentage, category, tableName) {
   }
   // --- 修改結束 ---
 }
+
+/**
+ * Debounce Function: 延遲執行函式，直到事件停止觸發後的一段時間。
+ * (如果你的 main.js 或其他地方已經有 debounce 函式，可以不用重複定義)
+ * @param {Function} func 要執行的函式
+ * @param {number} wait 等待的毫秒數
+ * @param {boolean} immediate 是否在事件一開始就觸發一次
+ * @returns {Function} Debounced function
+ */
+function debounce(func, wait, immediate) {
+  let timeout;
+  return function () {
+    const context = this,
+      args = arguments;
+    const later = function () {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+}
+
+/**
+ * 捲動到目前具有 'nowPlaying' ID 的元素 (正在播放或暫停的列)
+ */
+function scrollToNowPlayingElement() {
+  // 直接尋找 id 為 nowPlaying 的元素
+  const activeRow = document.getElementById('nowPlaying');
+
+  if (activeRow && activeRow.tagName === 'TR') {
+    // 確保找到的是表格列
+    console.log('視窗大小改變，捲動到:', activeRow);
+    activeRow.scrollIntoView({
+      behavior: 'smooth', // 平滑捲動
+      block: 'center', // 嘗試置中顯示
+    });
+  } else {
+    console.log('視窗大小改變，但找不到 #nowPlaying 元素。');
+  }
+}
+
+// 監聽 window 的 resize 事件，並使用 debounce 處理
+// 這裡設定 250 毫秒，表示停止調整大小 250ms 後才執行捲動
+window.addEventListener('resize', debounce(scrollToNowPlayingElement, 250));
