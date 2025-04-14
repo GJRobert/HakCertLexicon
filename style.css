@@ -139,7 +139,7 @@ audio {
   align-items: center; /* 垂直置中 */
   /* justify-content: space-between; /* 兩端對齊 */
   justify-content: flex-start; /* <--- 讓元素靠左對齊 */
-  flex-wrap: nowrap; /* <--- 嘗試不換行，讓 details 被壓縮 */
+  flex-wrap: wrap; /* 改做做得換行 */
   gap: 10px; /* 項目之間的間距 */
   font-family: var(--title-font);
 }
@@ -186,17 +186,21 @@ audio {
 }
 
 /* 播放全部 */
-/*#audioControls {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 99;
-}*/ /* 改成放 title？ */
+#audioControls {
+  /* 如果 #audioControls 沒有其他 flex 相關設定，
+     可以加上 flex-shrink: 0 確保它也不會被壓縮 */
+  flex-shrink: 0;
+  /* display: inline-flex; */ /* 如果原本有 display，確保與 flex 容器兼容 */
+  /* align-items: center; */ /* 確保按鈕垂直對齊 */
+}
 #audioControls button {
   border: none;
-  font-size: 2vw;
+  font-size: clamp(18px, 2vw, 30px);
   /* margin: 0 5px;*/
   background: none;
+  padding: 0;
+  margin: 0 3px;
+  vertical-align: middle;
 }
 #audioControls button i,
 button.playFromThisRow i {
@@ -296,14 +300,11 @@ tr#nowPlaying td:first-of-type {
 }
 
 #progressDetails {
-  font-size: 2vw; /* 稍微小一點的字 */
+  font-size: clamp(18px, 2vw, 30px); /* 稍微小一點的字 */
   color: #555; /* 設定顏色 */
   vertical-align: middle; /* 垂直對齊 */
   margin-left: 8px; /* 和下拉選單間隔 */
-  white-space: nowrap; /* 防止文字換行 */
-  flex-shrink: 1; /* 允許被壓縮 */
-  overflow: hidden; /* 超出部分隱藏 */
-  text-overflow: ellipsis; /* 超出部分顯示省略號 */
+  flex-shrink: 0; /* 允許被壓縮 */
 
   a {
     color: wheat;
