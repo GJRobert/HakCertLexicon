@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=family=Iansui&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Iansui&display=swap');
 
 @font-face {
   font-family: '源石黑體';
@@ -8,6 +8,11 @@
   font-family: '源石黑體';
   src: local('GenSekiGothic TW R');
   font-weight: 700 !important;
+}
+
+:root {
+  --title-font: 'PT Sans', 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, Iansui,
+      sans-serif;
 }
 
 /* radio button style from <https: //webspe.net/tools/en/radio-button/> */
@@ -52,8 +57,7 @@
 /* Mine */
 #generated td:nth-of-type(2) {
   ruby {
-    font-family: 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, Iansui,
-      sans-serif !important;
+    font-family: var(--title-font) !important;
     font-size: 1.5em;
     font-weight: 700;
   }
@@ -137,6 +141,7 @@ audio {
   justify-content: flex-start; /* <--- 讓元素靠左對齊 */
   flex-wrap: nowrap; /* <--- 嘗試不換行，讓 details 被壓縮 */
   gap: 10px; /* 項目之間的間距 */
+  font-family: var(--title-font);
 }
 .bookmarkBtn {
   background: none;
@@ -299,6 +304,11 @@ tr#nowPlaying td:first-of-type {
   flex-shrink: 1; /* 允許被壓縮 */
   overflow: hidden; /* 超出部分隱藏 */
   text-overflow: ellipsis; /* 超出部分顯示省略號 */
+
+  a {
+    color: wheat;
+    font-family: var(--title-font);
+  }
 }
 
 /* Autoplay Modal Styles */
