@@ -22,6 +22,11 @@
   column-gap: 4px;
   line-height: 1;
   cursor: pointer;
+  border: 2px solid transparent; /* 預留邊框空間 */
+  border-radius: 8px;       /* 預設圓角 */
+  padding: 2px 5px;         /* 預設內距 */
+  margin-right: 8px; /* 稍微調整間距 */
+  transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out; /* 可選：平滑過渡效果 */
 }
 
 .radioItem:not(:last-of-type) {
@@ -246,12 +251,10 @@ audio[data-skip='true'] {
 }
 
 .dialect {
-  padding: 0.3em 1em;
+  padding: /*0.3em 1em;*/ 3px 0;
   display: inline-block;
   color: black;
-  a {
-    color: white;
-  }
+  margin-bottom: 5px; /* 加點垂直間距 */
 }
 .四縣 {
   background-color: #678d3f;
@@ -271,6 +274,12 @@ audio[data-skip='true'] {
 }
 .詔安 {
   background-color: #974a47;
+}
+/* 確保連結樣式正確 */
+.dialect > span[data-varname] > a {
+    color: white;
+    /* text-decoration: none;*/
+    display: block; /* 讓連結填滿 span */
 }
 
 tr#nowPlaying {
@@ -364,3 +373,31 @@ tr#nowPlaying td:first-of-type {
   cursor: pointer;
 }
 */
+
+/* 選中的「腔別+級別」連結容器樣式 */
+span[data-varname].active-dialect-level {
+  border: 2px solid #dc3545; /* 紅色邊框 */
+  border-radius: 8px;       /* 圓角 */
+  padding: 3px 6px;         /* 微調內距，讓框線不要太貼近文字 */
+  background-color: rgba(220, 53, 69, 0.1); /* 新增：淡淡的紅色背景 (紅底效果) */
+  box-shadow: 0 0 5px rgba(220, 53, 69, 0.5); /* 可選：加上淡淡的紅色光暈 */
+  /* 確保背景色和文字顏色不受影響或按需調整 */
+}
+/* --- 新增：為 span[data-varname] 設定基本樣式以避免跳動 --- */
+.dialect > span[data-varname] { /* 直接選取內層的 span */
+  display: inline-block; /* 讓 padding 和 border 生效 */
+  border: 2px solid transparent; /* 預留邊框空間 */
+  border-radius: 8px;       /* 預設圓角 */
+  padding: 3px 6px;         /* 預設內距，與 active 狀態一致 */
+  margin: 0 2px;            /* 微調級別之間的水平間距 */
+  vertical-align: middle;   /* 確保垂直對齊 */
+  transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* 平滑過渡效果 */
+}
+
+/* 選中的「類別」選項標籤樣式 */
+.radioItem.active-category {
+  border: 2px solid #dc3545; /* 紅色邊框 */
+  border-radius: 8px;       /* 圓角 */
+  padding: 2px 5px;         /* 微調內距 */
+  background-color: rgba(220, 53, 69, 0.1); /* 可選：加上淡淡的紅色背景 */
+}

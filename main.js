@@ -137,15 +137,20 @@ function csvToArray(str, delimiter = ',') {
 
 // 加入新的可選參數：initialCategory, targetRowId
 function generate(content, initialCategory = null, targetRowId = null) {
+  // --- 保留 generate 開頭的變數定義和分析腔別級別的邏輯 ---
+  console.log('Generate called for:', content.name); // 增加日誌
+
+  // --- 新增：在 generate 開始時，確保清除舊的類別選中狀態 ---
+  document.querySelectorAll('.radioItem').forEach((label) => {
+    label.classList.remove('active-category');
+  });
   // --- 新增：如果不是從下拉選單觸發，就清除進度詳情 ---
-  if (!initialCategory) {
+  if (!initialCategory && !targetRowId) {
     const progressDetailsSpan = document.getElementById('progressDetails');
     if (progressDetailsSpan) progressDetailsSpan.textContent = '';
   }
   // --- 新增結束 ---
 
-  // --- 保留 generate 開頭的變數定義和分析腔別級別的邏輯 ---
-  console.log('Generate called for:', content.name); // 增加日誌
   let 腔 = '';
   let 級 = '';
   腔 = content.name.substring(0, 1);
@@ -242,12 +247,28 @@ function generate(content, initialCategory = null, targetRowId = null) {
     級名,
   };
 
+  var radios = document.querySelectorAll('input[name="category"]');
+  const radioLabels = document.querySelectorAll('.radioItem'); // 取得所有 label
+
   // 設定 radio button 的 change 事件監聽
   radios.forEach(function (radio) {
     radio.addEventListener('change', function () {
       if (this.checked) {
         const selectedCategory = this.value;
         console.log('Category changed to:', selectedCategory); // 增加日誌
+
+        // --- 修改：處理類別選中樣式 ---
+        // 1. 移除所有 radio label 的 active class
+        radioLabels.forEach((label) =>
+          label.classList.remove('active-category')
+        );
+        // 2. 為當前選中的 radio button 對應的 label 加上 active class
+        const currentLabel = this.closest('.radioItem');
+        if (currentLabel) {
+          currentLabel.classList.add('active-category');
+        }
+        // --- 修改結束 ---
+
         // --- 新增：手動切換分類時清除進度詳情 ---
         const progressDetailsSpan = document.getElementById('progressDetails');
         if (progressDetailsSpan) progressDetailsSpan.textContent = '';
@@ -267,6 +288,17 @@ function generate(content, initialCategory = null, targetRowId = null) {
     if (targetRadio) {
       console.log('Found target radio for:', initialCategory); // 增加日誌
       targetRadio.checked = true;
+
+      // --- 新增：為自動選中的類別加上樣式 ---
+      const targetLabel = targetRadio.closest('.radioItem');
+      if (targetLabel) {
+        // 先清除所有，再添加目標的 (以防萬一)
+        radioLabels.forEach((label) =>
+          label.classList.remove('active-category')
+        );
+        targetLabel.classList.add('active-category');
+      }
+
       // 直接呼叫新函式來建立表格，並傳遞 targetRowId
       buildTableAndSetupPlayback(
         initialCategory,
@@ -930,6 +962,55 @@ function buildTableAndSetupPlayback(
 
 /* 最頂端一開始讀取進度 */
 document.addEventListener('DOMContentLoaded', function () {
+  // --- 新增：處理腔別級別連結點擊 ---
+  const dialectLevelLinks = document.querySelectorAll('.dialect a');
+  // const dialectSpans = document.querySelectorAll('.dialect'); // 取得所有 span // 不再需要
+
+  dialectLevelLinks.forEach((link) => {
+    link.addEventListener('click', function (event) {
+      event.preventDefault(); // 防止頁面跳轉
+
+      // 找到包覆 <a> 的那個帶有 data-varname 的 span
+      const targetSpan = this.parentElement;
+      if (!targetSpan || !targetSpan.dataset.varname) {
+        console.error('無法找到帶有 data-varname 的父層 span:', this);
+        alert('處理點擊時發生錯誤。');
+        return;
+      }
+
+      const dataVarName = targetSpan.dataset.varname; // 從正確的 span 讀取 data-varname
+
+      if (dataVarName && typeof window[dataVarName] !== 'undefined') {
+        // 1. 移除所有級別連結 span 的 active class
+        //    (更精確地針對帶 data-varname 的 span 操作)
+        document.querySelectorAll('span[data-varname]').forEach((span) => {
+          span.classList.remove('active-dialect-level');
+        });
+        // 2. 為當前點擊的連結對應的 span 加上 active class
+        targetSpan.classList.add('active-dialect-level');
+
+        // 3. 清除類別選項的 active class (因為換了詞庫)
+        document.querySelectorAll('.radioItem').forEach((label) => {
+          label.classList.remove('active-category');
+        });
+
+        // 4. 呼叫 generate 函式
+        console.log(
+          `Dialect link clicked, calling generate for ${dataVarName}`
+        );
+        generate(window[dataVarName]);
+      } else {
+        // 在錯誤訊息中加入更多上下文
+        console.error(
+          '找不到對應的資料變數或 data-varname:',
+          dataVarName,
+          'on element:',
+          targetSpan
+        );
+        alert('載入詞庫時發生錯誤。');
+      }
+    });
+  });
   updateProgressDropdown();
 
   const backToTopButton = document.getElementById('backToTopBtn');
@@ -1226,6 +1307,32 @@ document.addEventListener('DOMContentLoaded', function () {
     if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
   }
   // --- 新增結束 ---
+
+  // --- 新增：如果沒有 URL 參數，確保清除所有 active 狀態 ---
+  // 這個區塊會在上面的 if/else 執行完畢 *之後* 執行
+  // 它的目的是確保，如果頁面不是透過完整的 URL 參數載入的
+  // (也就是說，上面的 if 條件不成立，或者雖然成立但 generate 還沒執行或失敗)
+  // 那麼就強制清除所有可能的 active 狀態，回到初始視覺效果。
+  if (!urlParams.has('dialect')) {
+    // 檢查是否有 URL 參數觸發 generate
+    document.querySelectorAll('span[data-varname]').forEach((span) =>
+      span.classList.remove('active-dialect-level')
+    );
+    document.querySelectorAll('.radioItem').forEach((label) => {
+      label.classList.remove('active-category');
+    });
+    // 確保 header 控制鈕被移除 (這部分你已經有了)
+    const header = document.getElementById('header');
+    header?.querySelector('#audioControls')?.remove();
+    const progressDetailsSpan = document.getElementById('progressDetails');
+    if (progressDetailsSpan) progressDetailsSpan.textContent = '';
+    // 顯示初始提示 (這部分你已經有了)
+    const contentContainer = document.getElementById('generated');
+    if (contentContainer && contentContainer.innerHTML.trim() === '') {
+      contentContainer.innerHTML =
+        '<p style="text-align: center; margin-top: 20px;">請點擊上方連結選擇腔調與級別。</p>';
+    }
+  }
 });
 
 /* 標示大埔變調 */
