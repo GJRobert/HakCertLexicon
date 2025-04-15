@@ -1642,30 +1642,53 @@ function saveBookmark(rowId, percentage, category, tableName) {
   console.log(`新增紀錄: ${tableName} - ${category} 在行 ${rowId}`);
   // 3. 如果紀錄超過 10 筆，執行刪除邏輯
   if (bookmarks.length > 10) {
-    // ... (保留刪除邏輯) ...
-    console.log('紀錄超過 10 筆，執行刪除邏輯。');
+    console.log(`紀錄超過 10 筆 (${bookmarks.length})，執行刪除邏輯。新紀錄: ${newBookmark.tableName} - ${newBookmark.cat}`);
     let indexToDelete = -1;
-    for (let i = bookmarks.length - 1; i >= 0; i--) {
-      if (i === 0) continue;
+    let foundMatch = false; // 用一個 flag 追蹤是否找到匹配
+
+    console.log('開始檢查索引從', bookmarks.length - 1, '到 1');
+    // 修改迴圈條件，更簡潔，避免檢查索引 0
+    for (let i = bookmarks.length - 1; i >= 1; i--) {
+      const currentBookmark = bookmarks[i];
+      console.log(`  檢查索引 ${i}: ${currentBookmark.tableName} - ${currentBookmark.cat}`);
+
+      // 檢查是否同表格且不同類別
       if (
-        bookmarks[i].tableName === newBookmark.tableName &&
-        bookmarks[i].cat !== newBookmark.cat
+        currentBookmark.tableName === newBookmark.tableName &&
+        currentBookmark.cat !== newBookmark.cat
       ) {
         indexToDelete = i;
+        foundMatch = true; // 設定 flag
         console.log(
-          `找到要刪除的同表格不同類別紀錄: 索引 ${i}, ${bookmarks[i].tableName} - ${bookmarks[i].cat}`
+          `  找到符合條件的紀錄於索引 ${i} (同表格，不同類別)。將刪除此筆。`
         );
-        break;
+        break; // 找到目標，停止搜尋
+      }
+      // (可選) 增加其他情況的 log，幫助判斷為何沒匹配
+      else if (currentBookmark.tableName === newBookmark.tableName) {
+          console.log(`  索引 ${i} 表格名稱相符，但類別相同 (${currentBookmark.cat})。跳過。`);
+          // 理論上不該發生，但 log 有助於確認
+      } else {
+          console.log(`  索引 ${i} 表格名稱不符 (${currentBookmark.tableName})。跳過。`);
       }
     }
-    if (indexToDelete > -1) {
-      console.log(`刪除特定紀錄於索引 ${indexToDelete}`);
+
+    // 根據 flag 判斷如何刪除
+    if (foundMatch) {
+      console.log(`執行刪除特定紀錄於索引 ${indexToDelete}`);
       bookmarks.splice(indexToDelete, 1);
     } else {
-      console.log('未找到符合條件的紀錄，刪除最舊的一筆。');
-      bookmarks.splice(10, 1);
+      console.log('未找到符合條件的紀錄 (同表格，不同類別)。將刪除最舊的一筆 (索引 10)。');
+      // 確保索引 10 存在 (雖然 length > 10 應該保證了)
+      if (bookmarks.length > 10) {
+          bookmarks.splice(10, 1);
+      } else {
+          // 理論上不該發生
+          console.warn("嘗試刪除索引 10，但書籤數量不足。");
+      }
     }
   }
+
   // 4. 儲存更新後的紀錄 (最多 10 筆)
   localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
   updateProgressDropdown(); // 更新下拉選單顯示
