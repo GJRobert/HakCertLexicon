@@ -251,10 +251,11 @@ audio[data-skip='true'] {
 }
 
 .dialect {
-  padding: /*0.3em 1em;*/ 3px 0;
+  padding: /*0.3em 1em;*/5px 10px;
   display: inline-block;
   color: black;
   margin-bottom: 5px; /* 加點垂直間距 */
+  vertical-align: middle;
 }
 .四縣 {
   background-color: #678d3f;
@@ -298,7 +299,7 @@ tr#nowPlaying td:first-of-type {
   border-radius: 4px; /* 圓角 */
   background-color: white; /* 背景色 */
   font-family: inherit; /* 繼承父元素字型 */
-  font-size: 3vw; /* 字型大小，可調整 */
+  font-size: clamp(18px, 3vw, 2rem); /* 字型大小，可調整 */
   margin: 0; /* 移除外距，由 header 的 gap 控制 */
   vertical-align: middle; /* 垂直對齊方式 */
   max-width: 50%; /* 或適合的寬度 */
@@ -340,7 +341,7 @@ tr#nowPlaying td:first-of-type {
 
 .modal-content {
   position: relative; /* 相對定位，以便內容在背景之上 */
-  background-color: white;
+  background-color: #aa96b7;
   padding: 30px 40px; /* 增加左右 padding */
   border-radius: 8px;
   /* text-align: center; /* 由 justify-content 取代 */
@@ -360,8 +361,9 @@ tr#nowPlaying td:first-of-type {
 
 .modal-content>p {
   margin: 0; /* 移除預設的 margin */
-  font-size: 3vw; /* 稍微放大字體 */
+  font-size: clamp(1.5rem, 3vw, 1.8rem); /* 稍微放大字體 */
   text-align: center; /* 確保段落內的文字也是置中的 */
+  color: #d9e2a9;
 }
 
 /* 如果你選擇加入按鈕，可以加上樣式 */
@@ -379,7 +381,7 @@ span[data-varname].active-dialect-level {
   border: 2px solid #dc3545; /* 紅色邊框 */
   border-radius: 8px;       /* 圓角 */
   padding: 3px 6px;         /* 微調內距，讓框線不要太貼近文字 */
-  background-color: rgba(220, 53, 69, 0.1); /* 新增：淡淡的紅色背景 (紅底效果) */
+  background-color: rgba(220, 53, 69, 0.5); /* 新增：淡淡的紅色背景 (紅底效果) */
   box-shadow: 0 0 5px rgba(220, 53, 69, 0.5); /* 可選：加上淡淡的紅色光暈 */
   /* 確保背景色和文字顏色不受影響或按需調整 */
 }
@@ -388,8 +390,8 @@ span[data-varname].active-dialect-level {
   display: inline-block; /* 讓 padding 和 border 生效 */
   border: 2px solid transparent; /* 預留邊框空間 */
   border-radius: 8px;       /* 預設圓角 */
-  padding: 3px 6px;         /* 預設內距，與 active 狀態一致 */
-  margin: 0 2px;            /* 微調級別之間的水平間距 */
+  /*! padding: 3px 6px; */         /* 預設內距，與 active 狀態一致 */
+  /*! margin: 0 2px; */            /* 微調級別之間的水平間距 */
   vertical-align: middle;   /* 確保垂直對齊 */
   transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* 平滑過渡效果 */
 }
@@ -400,4 +402,89 @@ span[data-varname].active-dialect-level {
   border-radius: 8px;       /* 圓角 */
   padding: 2px 5px;         /* 微調內距 */
   background-color: rgba(220, 53, 69, 0.1); /* 可選：加上淡淡的紅色背景 */
+}
+
+/* --- 夜間模式 (Dark Mode) 顏色設定 --- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 覆蓋夜間模式下的文字顏色 */
+    --main-text-color: #e0e0e0; /* 淺灰色，適合在暗色背景上閱讀 */
+
+    /* (可選) 同時定義夜間模式的背景色 */
+    /*--background-color: #121212; /* 深灰色背景 */
+
+    /* (可選) 覆蓋其他需要在夜間模式下改變顏色的變數 */
+    /* 例如：連結顏色 */
+    /* --link-color: #90caf9; */ /* 淺藍色 */
+  }
+
+  /* (可選) 如果 body 背景色不是用變數控制，可以在這裡直接設定 */
+  /*body {
+    background-color: var(--background-color, #121212); /* 套用變數，或提供備用色 */
+  /*}*/
+
+  /* (可選) 如果有特定元素的顏色不是繼承 body 或使用 --main-text-color，
+    也需要在這裡單獨設定它們在夜間模式下的顏色 */
+  /* 例如：
+  .some-specific-element {
+    color: #cccccc;
+  }
+  */
+
+  /* --- 針對夜間模式調整 header 背景 --- */
+  #header {
+    background: rgba(40, 40, 40, 0.7); /* 深色半透明背景 */
+    /* backdrop-filter 效果在深色背景下可能不明顯或需要調整 */
+  }
+
+  /* --- 調整表格偶數行背景 --- */
+  tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.1); /* 非常淡的白色透明背景 */
+  }
+
+  /* --- 調整 Modal 背景和文字 --- */
+  #autoplayModal {
+    background-color: rgba(0, 0, 0, 0.8); /* 更深的背景 */
+  }
+  .modal-content {
+    background-color: #333; /* 深灰色 Modal 背景 */
+  }
+  .modal-content > p {
+    color: #f5f5f5; /* Modal 內的文字用更亮的白色 */
+  }
+
+  /* --- 調整其他可能有顏色衝突的元素 --- */
+  .notes {
+    color: #111; /* 備註文字用深色，因為背景是淺紫色 */
+    background-color: var(--iMazinGrace-1); /* 背景色不變 */
+  }
+  #progressDetails a {
+    color: #bbdefb; /* 夜間模式下的連結顏色 (淺藍) */
+  }
+  /* ... 其他需要調整的元素 ... */
+  #progressDropdown,
+  #audioControls button i,
+  #audioControls button.ongoing i,
+  button.playFromThisRow i,
+  button.playFromThisRow.ongoing i {
+    color: #245d48;
+  }
+  .radioItem.active-category {
+    background-color: rgba(78, 106, 47, 0.77);
+    border-color: rgba(78, 106, 47, 0.77);
+  }
+  #generated td:nth-of-type(2) ruby.sandhi.高降變 {
+    color: #FF8080;
+    /* 淺紅色 (替代 red) */
+  }
+
+  #generated td:nth-of-type(2) ruby.sandhi.中平變 {
+    color: #FF9966;
+    /* 淺橘紅色 (替代 orangered) */
+  }
+
+  #generated td:nth-of-type(2) ruby.sandhi.低升變 {
+    color: #90CAF9;
+    /* 淺藍色 (替代 blue) */
+  }
 }
