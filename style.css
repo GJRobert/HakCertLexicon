@@ -302,7 +302,7 @@ tr#nowPlaying td:first-of-type {
   font-size: clamp(18px, 3vw, 2rem); /* 字型大小，可調整 */
   margin: 0; /* 移除外距，由 header 的 gap 控制 */
   vertical-align: middle; /* 垂直對齊方式 */
-  max-width: 50%; /* 或適合的寬度 */
+  max-width: 100%; /* 或適合的寬度 */
   /*flex-grow: 1; /* 允許它伸展利用空間 */
   min-width: 150px; /* 確保最小寬度 */
   cursor: pointer; /* 滑鼠指標 */

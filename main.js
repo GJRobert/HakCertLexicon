@@ -45,6 +45,15 @@ function extractDialectLevelCodes(tableName) {
   return { dialect: dialectCode, level: levelCode };
 }
 
+// --- 全域變數 ---
+let isCrossCategoryPlaying = false; // 標記是否正在進行跨類別連續播放
+let categoryList = []; // 儲存目前腔調級別的類別列表
+let currentCategoryIndex = -1; // 儲存目前播放類別的索引
+let currentAudio = null; // 將 currentAudio 移到全域，以便在 playAudio 和其他地方共享
+let isPlaying = false; // 播放狀態也移到全域
+let isPaused = false; // 暫停狀態也移到全域
+let currentAudioIndex = 0; // 當前音檔索引也移到全域
+
 /* Gemini 老師。這種方式還是會因為 CORS 被擋下，無法偵測
 function checkAudioStatus(url) {
   return fetch(url, { method: 'HEAD' })
@@ -333,6 +342,13 @@ function buildTableAndSetupPlayback(
   dialectInfo,
   autoPlayTargetRowId = null
 ) {
+  // 獲取類別列表和目前索引
+  const radioButtons = document.querySelectorAll('input[name="category"]');
+  categoryList = Array.from(radioButtons).map(radio => radio.value);
+  const checkedRadio = document.querySelector('input[name="category"]:checked');
+  currentCategoryIndex = checkedRadio ? categoryList.indexOf(checkedRadio.value) : -1;
+  console.log("Current categories:", categoryList, "Current index:", currentCategoryIndex); // Debug log
+
   const contentContainer = document.getElementById('generated');
   contentContainer.innerHTML = ''; // 清空，確保只顯示當前分類的內容
 
@@ -542,12 +558,12 @@ function buildTableAndSetupPlayback(
 
   // 先定義播放相關的狀態變數 (移到更外層，或作為某個物件的屬性，以保持狀態)
   // 為了簡單起見，暫時放在 buildTableAndSetupPlayback 內部，但注意這意味著每次切換分類狀態會重置
-  let currentAudioIndex = 0;
-  let isPlaying = false;
-  let isPaused = false;
-  let currentAudio = null;
-  const audioElements = audioElementsList; // 使用收集到的元素
-  const bookmarkButtons = bookmarkButtonsList; // 使用收集到的按鈕
+  // let currentAudioIndex = 0; // 移到全域
+  // let isPlaying = false; // 移到全域
+  // let isPaused = false; // 移到全域
+  // let currentAudio = null; // 移到全域
+  const audioElements = audioElementsList; // 使用收集到的元素 (保持局部，因為每個類別不同)
+  const bookmarkButtons = bookmarkButtonsList; // 使用收集到的按鈕 (保持局部)
 
   // --- 播放控制相關函式 (playAudio, handleAudioEnded, addNowPlaying, removeNowPlaying) ---
   // --- 這些函式現在定義在 buildTableAndSetupPlayback 內部或可以訪問其變數 ---
@@ -561,28 +577,69 @@ function buildTableAndSetupPlayback(
       nowPlaying.removeAttribute('id');
     }
   }
+  // --- 抽離出播放結束音效和重置狀態的邏輯 ---
+  function playEndOfPlayback() {
+       const endAudio = new Audio('endOfPlay.mp3');
+       endAudio.play().catch((e) => console.error('播放結束音效失敗:', e));
+       currentAudioIndex = 0;
+       isPlaying = false;
+       isPaused = false;
+       currentAudio = null;
+       const pauseResumeButton = document.getElementById('pauseResumeBtn'); // 需要重新獲取按鈕引用
+       const stopButton = document.getElementById('stopBtn'); // 需要重新獲取按鈕引用
+       if (pauseResumeButton) pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+       if (pauseResumeButton) pauseResumeButton.classList.remove('ongoing');
+       if (pauseResumeButton) pauseResumeButton.classList.add('ended');
+       if (stopButton) stopButton.classList.remove('ongoing');
+       if (stopButton) stopButton.classList.add('ended');
+       document.querySelectorAll('.playFromThisRow').forEach((element) => {
+           element.classList.remove('ongoing');
+           element.classList.add('playable');
+       });
+       removeNowPlaying();
+       isCrossCategoryPlaying = false; // 確保標記被重設
+  }
+  // --- 抽離結束 ---
+
   function playAudio(index) {
-    if (index >= audioElements.length) {
-      const endAudio = new Audio('endOfPlay.mp3');
-      endAudio.play().catch((e) => console.error('播放結束音效失敗:', e)); // Add catch
-      currentAudioIndex = 0;
-      isPlaying = false;
-      isPaused = false;
-      currentAudio = null;
-      if (pauseResumeButton)
-        pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
-      if (pauseResumeButton) pauseResumeButton.classList.remove('ongoing');
-      if (pauseResumeButton) pauseResumeButton.classList.add('ended');
-      if (stopButton) stopButton.classList.remove('ongoing');
-      if (stopButton) stopButton.classList.add('ended');
-      document.querySelectorAll('.playFromThisRow').forEach((element) => {
-        element.classList.remove('ongoing');
-        element.classList.add('playable');
-      });
-      removeNowPlaying();
-      return;
+    // 獲取當前類別的 audioElements (因為 audioElements 是 buildTableAndSetupPlayback 的局部變數)
+    const currentCategoryAudioElements = audioElementsList; // 使用 buildTableAndSetupPlayback 內部的 audioElementsList
+
+    if (index >= currentCategoryAudioElements.length) {
+        console.log("Reached end of category. Current index:", currentCategoryIndex, "Total categories:", categoryList.length);
+        const nextCategoryIndex = currentCategoryIndex + 1;
+        if (nextCategoryIndex < categoryList.length) {
+            const nextCategoryValue = categoryList[nextCategoryIndex];
+            const nextRadioButton = document.querySelector(`input[name="category"][value="${nextCategoryValue}"]`);
+            if (nextRadioButton) {
+                console.log(`Switching to next category: ${nextCategoryValue}`);
+                isCrossCategoryPlaying = true; // 設定標記
+                // 確保停止目前的播放狀態視覺效果
+                const stopButton = document.getElementById('stopBtn'); // 獲取停止按鈕
+                if (stopButton && isPlaying) { // 只有在播放中才需要點擊停止
+                   console.log("Stopping current playback before switching category...");
+                   stopButton.click(); // 模擬點擊停止按鈕來清理狀態
+                }
+                // 使用 setTimeout 確保狀態清理完成
+                setTimeout(() => {
+                    console.log("Clicking next radio button...");
+                    nextRadioButton.click(); // 觸發切換類別
+                }, 50); // 短暫延遲
+            } else {
+                console.error(`Could not find radio button for next category: ${nextCategoryValue}`);
+                // 找不到下一個類別按鈕，執行停止邏輯
+                playEndOfPlayback();
+            }
+        } else {
+            console.log("Reached end of all categories.");
+            // 已經是最後一個類別，執行停止邏輯
+            playEndOfPlayback();
+        }
+        return; // 無論如何都返回，避免執行後續的播放邏輯
     }
-    currentAudio = audioElements[index];
+
+    // 使用當前類別的音檔列表
+    currentAudio = currentCategoryAudioElements[index];
     if (currentAudio.dataset.skip === 'true') {
       console.log('Skipping audio index:', index);
       currentAudioIndex++;
@@ -817,6 +874,7 @@ function buildTableAndSetupPlayback(
 
   // 抽離出的啟動播放邏輯
   function startPlayingFromRow(buttonElement) {
+    isCrossCategoryPlaying = false; // User initiated playback, disable cross-category mode
     currentAudioIndex = parseInt(buttonElement.dataset.index);
     console.log('Starting playback from index:', currentAudioIndex); // 增加日誌
     isPlaying = true;
@@ -957,8 +1015,26 @@ function buildTableAndSetupPlayback(
       progressDetailsSpan.textContent = ''; // 清除文字
     }
     // --- 結束 ---
-  }
+
+    // --- 新增：處理跨類別連續播放 ---
+    if (isCrossCategoryPlaying) {
+        console.log("Cross-category playback flag is true. Starting playback from beginning.");
+        const firstPlayButton = contentContainer.querySelector('.playFromThisRow'); // 找新建立表格的第一個播放按鈕
+        if (firstPlayButton) {
+             // 使用 setTimeout 確保 DOM 更新完成
+             setTimeout(() => {
+                console.log("Triggering playback for the first item of the new category.");
+                startPlayingFromRow(firstPlayButton); // 自動播放第一個
+             }, 100); // 短暫延遲
+        } else {
+            console.warn("Could not find the first play button for cross-category playback.");
+        }
+        // isCrossCategoryPlaying = false; // 不在這裡重設，在 playEndOfPlayback 或 startPlayingFromRow 重設
+    }
+    // --- 新增結束 ---
+
 } // --- buildTableAndSetupPlayback 函式結束 ---
+} // <-- 添加遺漏的大括號
 
 /* 最頂端一開始讀取進度 */
 document.addEventListener('DOMContentLoaded', function () {
@@ -1802,4 +1878,4 @@ function scrollToNowPlayingElement() {
 
 // 監聽 window 的 resize 事件，並使用 debounce 處理
 // 這裡設定 250 毫秒，表示停止調整大小 250ms 後才執行捲動
-window.addEventListener('resize', debounce(scrollToNowPlayingElement, 250));
+// window.addEventListener('resize', debounce(scrollToNowPlayingElement, 250)); // 為了除錯暫時註解掉
