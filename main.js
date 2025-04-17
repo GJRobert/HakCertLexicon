@@ -55,6 +55,7 @@ let isPaused = false; // 暫停狀態也移到全域
 let currentAudioIndex = 0; // 當前音檔索引也移到全域
 let finishedTableName = null; // 暫存剛播放完畢的表格名稱 (用於書籤替換)
 let finishedCat = null; // 暫存剛播放完畢的類別名稱 (用於書籤替換)
+let loadedViaUrlParams = false; // <-- 新增：標記是否透過 URL 參數載入
 
 /* Gemini 老師。這種方式還是會因為 CORS 被擋下，無法偵測
 function checkAudioStatus(url) {
@@ -1258,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', function () {
       categoryParam,
       rowParam
     );
+    loadedViaUrlParams = true; // <-- 在這裡設定旗標
 
     // 將 URL 參數映射回表格名稱 (例如 "da", "2" -> "大埔中級")
     let dialectName = '';
@@ -1384,6 +1386,7 @@ document.addEventListener('DOMContentLoaded', function () {
           '無法找到對應的資料變數:',
           dataVarName || targetTableName
         );
+        loadedViaUrlParams = false; // <-- 失敗時重設旗標 (可選，但較安全)
         // 可以在這裡顯示錯誤訊息或預設內容
         const contentContainer = document.getElementById('generated');
         if (contentContainer)
@@ -1396,6 +1399,7 @@ document.addEventListener('DOMContentLoaded', function () {
         dialectParam,
         levelParam
       );
+      loadedViaUrlParams = false; // <-- 失敗時重設旗標 (可選，但較安全)
       if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
     }
   } else {
@@ -1798,6 +1802,23 @@ function saveBookmark(rowId, percentage, category, tableName) {
   // 4. 儲存更新後的紀錄 (最多 10 筆)
   localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
   updateProgressDropdown(); // 更新下拉選單顯示
+
+  // --- 新增：如果頁面是透過 URL 參數載入的，則在第一次儲存書籤後清除參數 ---
+  if (loadedViaUrlParams) {
+      console.log("首次儲存書籤 (來自 URL 參數載入)，清除 URL 參數...");
+      // 取得目前的 URL 路徑部分 (不含查詢字串和 hash)
+      const newUrl = window.location.pathname;
+      try {
+          // 使用 replaceState 修改 URL 而不重新載入頁面，也不會留下舊的 URL 在歷史紀錄中
+          history.replaceState(null, '', newUrl);
+          console.log("URL 參數已清除。");
+          loadedViaUrlParams = false; // 將旗標設回 false，表示參數已處理完畢，避免後續重複清除
+      } catch (e) {
+          console.error("清除 URL 參數時發生錯誤:", e);
+          // 即使清除失敗，也將標記設為 false，避免無限嘗試
+          loadedViaUrlParams = false;
+      }
+  }
 
   // --- 修改：強制選中剛儲存的進度並更新詳情為連結 ---
   const progressDropdown = document.getElementById('progressDropdown');
