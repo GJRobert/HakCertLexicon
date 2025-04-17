@@ -53,6 +53,8 @@ let currentAudio = null; // 將 currentAudio 移到全域，以便在 playAudio 
 let isPlaying = false; // 播放狀態也移到全域
 let isPaused = false; // 暫停狀態也移到全域
 let currentAudioIndex = 0; // 當前音檔索引也移到全域
+let finishedTableName = null; // 暫存剛播放完畢的表格名稱 (用於書籤替換)
+let finishedCat = null; // 暫存剛播放完畢的類別名稱 (用於書籤替換)
 
 /* Gemini 老師。這種方式還是會因為 CORS 被擋下，無法偵測
 function checkAudioStatus(url) {
@@ -613,6 +615,9 @@ function buildTableAndSetupPlayback(
             const nextRadioButton = document.querySelector(`input[name="category"][value="${nextCategoryValue}"]`);
             if (nextRadioButton) {
                 console.log(`Switching to next category: ${nextCategoryValue}`);
+                console.log(`Storing finished category: ${dialectInfo.fullLvlName} - ${category}`); // Debug
+                finishedTableName = dialectInfo.fullLvlName; // 儲存剛完成的表格名稱
+                finishedCat = category; // 儲存剛完成的類別
                 isCrossCategoryPlaying = true; // 設定標記
                 // 確保停止目前的播放狀態視覺效果
                 const stopButton = document.getElementById('stopBtn'); // 獲取停止按鈕
@@ -1018,7 +1023,32 @@ function buildTableAndSetupPlayback(
 
     // --- 新增：處理跨類別連續播放 ---
     if (isCrossCategoryPlaying) {
-        console.log("Cross-category playback flag is true. Starting playback from beginning.");
+        console.log("Cross-category playback flag is true.");
+        // --- 書籤替換邏輯 ---
+        if (finishedTableName && finishedCat) {
+            console.log(`Attempting to replace bookmark for finished category: ${finishedTableName} - ${finishedCat}`);
+            let bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+            const previousBookmarkIndex = bookmarks.findIndex(
+                (bm) => bm.tableName === finishedTableName && bm.cat === finishedCat
+            );
+            if (previousBookmarkIndex > -1) {
+                console.log(`Found finished bookmark at index ${previousBookmarkIndex}. Removing it.`);
+                bookmarks.splice(previousBookmarkIndex, 1);
+                localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
+                // 更新下拉選單以反映移除 (雖然 saveBookmark 等下會再更新一次)
+                updateProgressDropdown();
+            } else {
+                console.log(`Could not find bookmark for finished category: ${finishedTableName} - ${finishedCat}`);
+            }
+            // 清除暫存變數
+            finishedTableName = null;
+            finishedCat = null;
+        } else {
+             console.log("No finished category info found for bookmark replacement.");
+        }
+        // --- 書籤替換邏輯結束 ---
+
+        console.log("Starting playback from beginning of the new category.");
         const firstPlayButton = contentContainer.querySelector('.playFromThisRow'); // 找新建立表格的第一個播放按鈕
         if (firstPlayButton) {
              // 使用 setTimeout 確保 DOM 更新完成
