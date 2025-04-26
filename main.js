@@ -229,6 +229,8 @@ function generate(content, initialCategory = null, targetRowId = null) {
   fullLvlName = 腔名 + 級名;
   // --- 保留結束 ---
 
+  categoryList = []; // 在 generate() 裡面清空類別列表，恁仔做得確保每擺切換腔調級別个時節，都會用全新个類別列表。
+  
   var contentContainer = document.getElementById('generated');
   contentContainer.innerHTML = ''; // 清空顯示區域
 
@@ -241,8 +243,21 @@ function generate(content, initialCategory = null, targetRowId = null) {
   // --- 將建立表格和設定播放的邏輯移到新函式 ---
   // (這部分程式碼將從 generate 移到下面的 buildTableAndSetupPlayback)
 
+  // --- *** 新增修改：克隆 cat-panel 以移除舊監聽器 *** ---
+  const catPanel = document.getElementById('cat-panel');
+  if (catPanel) {
+    const catPanelClone = catPanel.cloneNode(true); // true 表示深層複製
+    catPanel.parentNode.replaceChild(catPanelClone, catPanel);
+    console.log('Cloned cat-panel to remove old listeners.');
+  } else {
+    console.error('Could not find #cat-panel to clone.');
+    // 如果找不到 cat-panel，後續可能會出錯，但至少記錄下來
+  }
+
   // --- 修改 radio button 的處理邏輯 ---
+  // *** 注意：因為 cat-panel 被替換了，需要重新獲取 radios 和 radioLabels ***
   var radios = document.querySelectorAll('input[name="category"]');
+  const radioLabels = document.querySelectorAll('.radioItem'); // 重新獲取
 
   // 將需要傳遞給 buildTableAndSetupPlayback 的資訊包裝起來
   const dialectInfo = {
@@ -258,9 +273,6 @@ function generate(content, initialCategory = null, targetRowId = null) {
     腔名,
     級名,
   };
-
-  var radios = document.querySelectorAll('input[name="category"]');
-  const radioLabels = document.querySelectorAll('.radioItem'); // 取得所有 label
 
   // 設定 radio button 的 change 事件監聽
   radios.forEach(function (radio) {
@@ -605,6 +617,13 @@ function buildTableAndSetupPlayback(
   // --- 抽離結束 ---
 
   function playAudio(index) {
+    // 獲取類別列表和目前索引，並將其設為 currentCategoryIndex
+    const radioButtons = document.querySelectorAll('input[name="category"]');
+    categoryList = Array.from(radioButtons).map(radio => radio.value);
+    const checkedRadio = document.querySelector('input[name="category"]:checked');
+    currentCategoryIndex = checkedRadio ? categoryList.indexOf(checkedRadio.value) : -1;
+    console.log("Current categories (inside playAudio):", categoryList, "Current index:", currentCategoryIndex);
+
     // 獲取當前類別的 audioElements (因為 audioElements 是 buildTableAndSetupPlayback 的局部變數)
     const currentCategoryAudioElements = audioElementsList; // 使用 buildTableAndSetupPlayback 內部的 audioElementsList
 
