@@ -10,9 +10,44 @@
   font-weight: 700 !important;
 }
 
+@keyframes pulse-yellow-effect {
+  0% {
+    /* 開始同結束時个顏色 (用變數定義个暫停黃色) */
+    background-color: var(--paused-yellow);
+  }
+  50% {
+    /* 動畫中間點个顏色 (做得調整 alpha 值分佢較透明) */
+    background-color: rgba(var(--paused-yellow-rgb, 255, 250, 205), 0.7); /* 預設用 LemonChiffon RGB */
+  }
+  100% {
+    /* 回到開始个顏色 */
+    background-color: var(--paused-yellow);
+  }
+}
+
+/* 暗夜模式个動畫 (用不同个基礎顏色) */
+@keyframes pulse-dark-yellow-effect {
+  0% {
+    background-color: var(--dark-paused-yellow); /* 暗夜模式个黃色 */
+  }
+  50% {
+    /* 暗夜模式下，做得調整 alpha 值分佢較暗或較透明 */
+    background-color: rgba(var(--dark-paused-yellow-rgb, 255, 255, 150), 0.3); /* 預設用暗夜黃色 RGB */
+  }
+  100% {
+    background-color: var(--dark-paused-yellow);
+  }
+}
+
+
 :root {
   --title-font: 'PT Sans', 'Heiti TC', 'Heiti SC', '源石黑體', tauhu-oo, Iansui,
       sans-serif;
+  --main-text-color: #245d48;
+  --iMazinGrace-1: #aa96b7;
+  --iMazinGrace-1-rgb: 170, 150, 183; /* 新增 RGB 版本方便用 rgba() */
+  --paused-yellow-rgb: 255, 250, 205; /* RGB 版本方便用 rgba() */
+  --paused-yellow: rgba(var(--paused-yellow-rgb), 1); /* 改用 rgba 確保一致 */
 }
 
 /* radio button style from <https: //webspe.net/tools/en/radio-button/> */
@@ -95,10 +130,6 @@
   font-size: 70%;
 }
 
-:root {
-  --main-text-color: #245d48;
-  --iMazinGrace-1: #aa96b7;
-}
 body {
   font-size: 20px;
 }
@@ -288,11 +319,17 @@ audio[data-skip='true'] {
 
 tr#nowPlaying {
   /*text-shadow: 0.2em 0.2em 0.3em var(--iMazinGrace-1);*/
-  text-shadow: 0.05em 0.05em 0px #ffffff, 0.1em 0.1em 0px rgba(0, 0, 0, 0.15);
+  /*text-shadow: 0.05em 0.05em 0px #ffffff, 0.1em 0.1em 0px rgba(0, 0, 0, 0.15);*/
   position: relative; /* 必須設定，以讓偽元素相對於 tr 定位 */
+  /* 設定規條个背景色，用 rgba 同變數 */
+  background-color: rgba(var(--iMazinGrace-1-rgb), 0.5);
+  /* 加入背景色个過渡效果 */
+  transition: background-color 0.4s ease; /* 0.4 秒个 ease 過渡 */
 }
-tr#nowPlaying td:first-of-type {
-  background-color: var(--iMazinGrace-1);
+/* --- 新增暫停狀態个樣式 --- */
+tr#nowPlaying.paused-playback {
+  /* background-color: var(--paused-yellow); <-- 這行做得註解掉或拿掉，因為動畫會處理 */
+  animation: pulse-yellow-effect 3s infinite ease-in-out; /* 應用動畫 */
 }
 
 /* 學習進度下拉擇單 */
@@ -410,84 +447,174 @@ span[data-varname].active-dialect-level {
 /* --- 夜間模式 (Dark Mode) 顏色設定 --- */
 @media (prefers-color-scheme: dark) {
   :root {
-    /* 覆蓋夜間模式下的文字顏色 */
+    /* 覆蓋夜間模式下的主要文字顏色 */
     --main-text-color: #e0e0e0; /* 淺灰色，適合在暗色背景上閱讀 */
-
-    /* (可選) 同時定義夜間模式的背景色 */
-    /*--background-color: #121212; /* 深灰色背景 */
-
-    /* (可選) 覆蓋其他需要在夜間模式下改變顏色的變數 */
-    /* 例如：連結顏色 */
-    /* --link-color: #90caf9; */ /* 淺藍色 */
+    /* 定義夜間模式的背景色 */
+    --dark-background-color: #1f1f1f; /* 深灰色背景 (比 #121212 稍淺) */
+    --dark-surface-color: #2c2c2c; /* 元件表面顏色 (例如表格行) */
+    --dark-primary-accent: #678d3f; /* 暗模式下个主要強調色 (沿用四縣綠) */
+    --dark-secondary-accent: #aa96b7; /* 暗模式下个次要強調色 (沿用 iMazinGrace-1) */
+    --dark-link-color: #90caf9; /* 淺藍色連結 */
+    --dark-button-text-color: #1f1f1f; /* 按鈕上个深色文字 */
+    --dark-modal-background: #333; /* Modal 背景 */
+    --dark-modal-text: #f5f5f5; /* Modal 文字 */
+    --dark-active-border-color: #dc3545; /* 選中項目个紅色邊框 (保持) */
+    --dark-active-bg-color: rgba(78, 106, 47, 0.77); /* 選中項目个背景 (改用較深个綠色) */
+    --dark-now-playing-bg: rgba(var(--iMazinGrace-1-rgb), 0.4); /* 暗模式下做得稍為透明兜 */
+    --dark-paused-yellow: rgba(var(--dark-paused-yellow-rgb), 0.5); /* 暗模式下个黃色，愛確定在深色背景看得清楚 */
+    --dark-paused-yellow-rgb: 255, 255, 150;
   }
 
-  /* (可選) 如果 body 背景色不是用變數控制，可以在這裡直接設定 */
-  /*body {
-    background-color: var(--background-color, #121212); /* 套用變數，或提供備用色 */
-  /*}*/
-
-  /* (可選) 如果有特定元素的顏色不是繼承 body 或使用 --main-text-color，
-    也需要在這裡單獨設定它們在夜間模式下的顏色 */
-  /* 例如：
-  .some-specific-element {
-    color: #cccccc;
+  body {
+    background-color: var(--dark-background-color);
+    color: var(--main-text-color); /* 確保 body 文字顏色也套用 */
   }
-  */
+
+  /* 確保所有子元素也繼承基本文字顏色 */
+  body * {
+     color: inherit; /* 繼承 body 設定个顏色 */
+  }
 
   /* --- 針對夜間模式調整 header 背景 --- */
   #header {
-    background: rgba(40, 40, 40, 0.7); /* 深色半透明背景 */
-    /* backdrop-filter 效果在深色背景下可能不明顯或需要調整 */
+    background: rgba(40, 40, 40, 0.8); /* 深色半透明背景，透明度略增 */
+    backdrop-filter: blur(8px); /* 加強模糊效果 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* 加一條細線分界 */
   }
 
   /* --- 調整表格偶數行背景 --- */
   tr:nth-child(even) {
-    background-color: rgba(255, 255, 255, 0.1); /* 非常淡的白色透明背景 */
+    background-color: var(--dark-surface-color); /* 使用元件表面顏色 */
   }
+  /* 確保表格文字顏色正確 */
+  td {
+      color: var(--main-text-color);
+  }
+
+  /* --- 調整連結顏色 --- */
+  a {
+    color: var(--dark-link-color);
+  }
+
+  /* --- 調整腔調區塊樣式 --- */
+  .dialect {
+    /* 背景色做得用較深个版本，或者調整透明度 */
+    /* 這邊用 filter 稍微降低亮度同飽和度做示範 */
+    filter: brightness(0.8) saturate(0.9);
+    color: var(--main-text-color); /* 區塊內文字用淺色 */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* 加點邊框增加區別 */
+    border-radius: 5px; /* 加圓角 */
+  }
+  .dialect > span[data-varname] > a {
+    color: #fff; /* 腔調內連結用白色較清楚 */
+  }
+  /* 選中个腔調級別 */
+  span[data-varname].active-dialect-level {
+    border-color: var(--dark-active-border-color);
+    background-color: rgba(220, 53, 69, 0.3); /* 背景透明度降低 */
+    box-shadow: 0 0 8px rgba(220, 53, 69, 0.6); /* 光暈加強 */
+  }
+   /* 確保 span[data-varname] 基本樣式在暗模式下也適用 */
+  .dialect > span[data-varname] {
+    border: 2px solid transparent;
+    border-radius: 8px;
+    transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+
+  /* --- 調整 Radio Button 樣式 --- */
+   .radioItem {
+     background-color: transparent; /* 暗模式下毋需要背景色 */
+     border: 2px solid var(--dark-surface-color); /* 用表面顏色做邊框 */
+   }
+   .radioButton {
+     border-color: var(--dark-link-color); /* 外框用連結藍色 */
+     background-color: var(--dark-surface-color); /* 未選中時用表面色 */
+   }
+   .radioButton:checked {
+     background-color: transparent; /* 選中時透明 */
+   }
+   .radioButton:checked::after {
+     border-color: var(--dark-link-color); /* 內圈也用連結藍色 */
+     background-color: var(--dark-link-color); /* 內圈填滿 */
+   }
+   /* 選中个類別 */
+   .radioItem.active-category {
+     border-color: var(--dark-active-border-color);
+     background-color: var(--dark-active-bg-color); /* 用定義个變數 */
+   }
 
   /* --- 調整 Modal 背景和文字 --- */
   #autoplayModal {
-    background-color: rgba(0, 0, 0, 0.8); /* 更深的背景 */
+    background-color: rgba(0, 0, 0, 0.85); /* 更深的背景 */
   }
   .modal-content {
-    background-color: #333; /* 深灰色 Modal 背景 */
+    background-color: var(--dark-modal-background);
   }
   .modal-content > p {
-    color: #f5f5f5; /* Modal 內的文字用更亮的白色 */
+    color: var(--dark-modal-text);
   }
 
   /* --- 調整其他可能有顏色衝突的元素 --- */
   .notes {
     color: #111; /* 備註文字用深色，因為背景是淺紫色 */
-    background-color: var(--iMazinGrace-1); /* 背景色不變 */
+    background-color: var(--dark-secondary-accent); /* 背景色不變 */
   }
   #progressDetails a {
-    color: #bbdefb; /* 夜間模式下的連結顏色 (淺藍) */
+    color: var(--dark-link-color); /* 進度詳情連結 */
   }
-  /* ... 其他需要調整的元素 ... */
-  #progressDropdown,
+  #progressDropdown {
+      background-color: var(--dark-surface-color);
+      color: var(--main-text-color);
+      border-color: rgba(255, 255, 255, 0.2);
+  }
+  /* 播放控制按鈕 */
   #audioControls button i,
+  button.playFromThisRow i {
+    background: var(--dark-primary-accent); /* 主要強調色 */
+    color: var(--dark-button-text-color); /* 按鈕文字用深色 */
+    box-shadow: 2px 2px rgba(0, 0, 0, 0.4); /* 陰影加深 */
+  }
   #audioControls button.ongoing i,
-  button.playFromThisRow i,
   button.playFromThisRow.ongoing i {
-    color: #245d48;
+    background-color: #ffd700 !important; /* 黃色 */
+    color: var(--dark-button-text-color);
   }
-  .radioItem.active-category {
-    background-color: rgba(78, 106, 47, 0.77);
-    border-color: rgba(78, 106, 47, 0.77);
+  #audioControls button.ended i,
+  button.playFromThisRow.ended i {
+    background-color: #b71c1c !important; /* 深紅色 */
+    color: #fff; /* 結束時文字用白色 */
   }
+  /* 回到頂部按鈕 */
+  #backToTopBtn {
+      background-color: rgba(255, 255, 255, 0.2); /* 半透明淺色 */
+      color: var(--main-text-color);
+  }
+  #backToTopBtn:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+  }
+  #backToTopBtn i {
+      color: var(--main-text-color);
+  }
+
+  /* 標音變調顏色調整 */
   #generated td:nth-of-type(2) ruby.sandhi.高降變 {
-    color: #FF8080;
-    /* 淺紅色 (替代 red) */
+    color: #FF8A80; /* 較亮个紅色 */
   }
-
   #generated td:nth-of-type(2) ruby.sandhi.中平變 {
-    color: #FF9966;
-    /* 淺橘紅色 (替代 orangered) */
+    color: #FFCC80; /* 較亮个橘色 */
+  }
+  #generated td:nth-of-type(2) ruby.sandhi.低升變 {
+    color: #80CBC4; /* 較亮个藍綠色 */
   }
 
-  #generated td:nth-of-type(2) ruby.sandhi.低升變 {
-    color: #90CAF9;
-    /* 淺藍色 (替代 blue) */
+  /* --- 暗夜模式下个 tr#nowPlaying 樣式 --- */
+  tr#nowPlaying {
+    background-color: var(--dark-now-playing-bg);
+    /* transition 會承接外背个設定，毋使重複寫 */
+  }
+  /* --- 暗夜模式下个暫停狀態樣式 --- */
+  tr#nowPlaying.paused-playback {
+    /* background-color: var(--dark-paused-yellow); <-- 這行做得註解掉或拿掉 */
+    animation: pulse-dark-yellow-effect 3s infinite ease-in-out; /* 應用暗夜模式个動畫 */
   }
 }

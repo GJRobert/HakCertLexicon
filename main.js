@@ -585,6 +585,7 @@ function buildTableAndSetupPlayback(
   function addNowPlaying(element) {
     removeNowPlaying();
     element.id = 'nowPlaying';
+    element.classList.remove('paused-playback'); // <--- 在這搭加這行，確保開始播放時毋會有暫停樣式
   }
   function removeNowPlaying() {
     const nowPlaying = document.getElementById('nowPlaying');
@@ -829,6 +830,8 @@ function buildTableAndSetupPlayback(
   if (pauseResumeButton) {
     pauseResumeButton.onclick = function () {
       // 使用 onclick 覆蓋舊監聽器
+      const nowPlayingRow = document.getElementById('nowPlaying'); // <--- 取得目前播放列
+
       if (isPlaying) {
         if (isPaused) {
           currentAudio?.play().catch((e) => console.error('恢復播放失敗:', e));
@@ -836,6 +839,7 @@ function buildTableAndSetupPlayback(
           this.innerHTML = '<i class="fas fa-pause"></i>';
           this.classList.add('ongoing');
           this.classList.remove('ended');
+          if (nowPlayingRow) nowPlayingRow.classList.remove('paused-playback'); // <--- 拿掉暫停 class
 
           // **** ↓↓↓ 在這搭仔加入捲動程式碼 ↓↓↓ ****
           console.log('Resuming playback, scrolling to current element.');
@@ -862,6 +866,8 @@ function buildTableAndSetupPlayback(
           this.innerHTML = '<i class="fas fa-play"></i>';
           this.classList.remove('ongoing');
           this.classList.add('ended'); // Or a specific paused style
+          if (nowPlayingRow) nowPlayingRow.classList.add('paused-playback'); // <--- 加入暫停 class
+          
         }
       }
     };
