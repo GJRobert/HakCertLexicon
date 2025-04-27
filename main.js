@@ -1112,6 +1112,10 @@ function buildTableAndSetupPlayback(
     }
     // --- 新增結束 ---
 
+    // --- 新增：在 Firefox 中調整 Ruby 字體大小 ---
+    adjustAllRubyFontSizes(contentContainer);
+    // --- 新增結束 ---
+
 } // --- buildTableAndSetupPlayback 函式結束 ---
 } // <-- 添加遺漏的大括號
 
@@ -1965,6 +1969,21 @@ function debounce(func, wait, immediate) {
 
 /**
  * 捲動到目前具有 'nowPlaying' ID 的元素 (正在播放或暫停的列)
+ * 並在 Firefox 中重新調整 Ruby 字體大小。
+ */
+function handleResizeActions() {
+  scrollToNowPlayingElement();
+  // 取得表格容器，如果不存在就返回
+  const contentContainer = document.getElementById('generated');
+  if (contentContainer) {
+      adjustAllRubyFontSizes(contentContainer);
+  } else {
+      console.warn("Resize handler: Could not find #generated container for font adjustment.");
+  }
+}
+
+/**
+ * 捲動到目前具有 'nowPlaying' ID 的元素 (正在播放或暫停的列)
  */
 function scrollToNowPlayingElement() {
   // 直接尋找 id 為 nowPlaying 的元素
@@ -1983,5 +2002,96 @@ function scrollToNowPlayingElement() {
 }
 
 // 監聽 window 的 resize 事件，並使用 debounce 處理
-// 這裡設定 250 毫秒，表示停止調整大小 250ms 後才執行捲動
-// window.addEventListener('resize', debounce(scrollToNowPlayingElement, 250)); // 為了除錯暫時註解掉
+// 這裡設定 250 毫秒，表示停止調整大小 250ms 後才執行捲動和字體調整
+window.addEventListener('resize', debounce(handleResizeActions, 250)); // <-- 改為呼叫新的處理函式
+
+/**
+ * 檢查目前瀏覽器係無係 Firefox。
+ * @returns {boolean} 如果係 Firefox 回傳 true，否則回傳 false。
+ */
+function isFirefox() {
+  return navigator.userAgent.toLowerCase().includes('firefox');
+}
+
+/**
+ * 調整單一 ruby 元素个字體大小，避免在 Firefox 中溢出。
+ * @param {HTMLElement} rubyElement - 要調整个 ruby 元素。
+ */
+function adjustRubyFontSize(rubyElement) {
+  if (!isFirefox()) return; // 只在 Firefox 執行
+
+  const tdElement = rubyElement.closest('td');
+  if (!tdElement) return;
+
+  // 先重設字體大小，以便取得正確个 scrollWidth
+  rubyElement.style.fontSize = ''; // 重設為 CSS 預設值
+  // 需要強制瀏覽器重新計算樣式
+  window.getComputedStyle(rubyElement).fontSize;
+
+  // 用 setTimeout 確保樣式重設先生效
+  setTimeout(() => {
+    const currentFontSize = parseFloat(window.getComputedStyle(rubyElement).fontSize);
+    const rubyWidth = rubyElement.scrollWidth;
+    // const tdWidth = tdElement.clientWidth; // <-- 原本个方式
+
+    // --- 新增：判斷模式並計算可用寬度 ---
+    const computedTdStyle = window.getComputedStyle(tdElement);
+    const isCardMode = computedTdStyle.display === 'block';
+    let availableWidth;
+    const buffer = 5; // 緩衝空間
+
+    if (isCardMode) {
+        // 卡片模式：clientWidth 減去 paddingLeft (像素) 再減 buffer
+        const paddingLeftPx = parseFloat(computedTdStyle.paddingLeft);
+        // 考慮到 ::before 佔用个空間，再減去 buffer
+        availableWidth = tdElement.clientWidth - paddingLeftPx - buffer * 3; // 稍微多減一點 buffer
+        // console.log(`Card Mode: clientW=${tdElement.clientWidth}, padL=${paddingLeftPx}, availW=${availableWidth}`);
+    } else {
+        // 寬螢幕模式：直接用 clientWidth 減 buffer
+        availableWidth = tdElement.clientWidth - buffer;
+        // console.log(`Wide Mode: clientW=${tdElement.clientWidth}, availW=${availableWidth}`);
+    }
+    // --- 新增結束 ---
+
+
+    if (rubyWidth > availableWidth) { // <-- 用 availableWidth 比較
+      // 按比例計算新字體大小，但設定下限
+      let newSize = Math.floor(currentFontSize * availableWidth / rubyWidth);
+      const minSize = 10; // 最小字體大小 (px)
+      newSize = Math.max(newSize, minSize);
+
+      if (newSize < currentFontSize) { // 只有在需要縮小時才應用
+          // console.log(`Firefox: Adjusting ruby font size: ${rubyElement.textContent.substring(0,10)}... from ${currentFontSize}px to ${newSize}px`);
+          rubyElement.style.fontSize = `${newSize}px`;
+      } else {
+         // 如果計算出个 newSize 無比 currentFontSize 細，愛確定拿忒 style.fontSize
+         if (rubyElement.style.fontSize) {
+             // console.log(`Firefox: Ruby fits or newSize >= currentSize, removing inline style.`);
+             rubyElement.style.fontSize = '';
+         }
+      }
+    } else {
+        // 如果 ruby 元素闊度細過可用闊度，愛確定拿忒 style.fontSize
+        if (rubyElement.style.fontSize) {
+            // console.log(`Firefox: Ruby fits, removing inline style.`);
+            rubyElement.style.fontSize = '';
+        }
+    }
+  }, 0); // Timeout 0 通常會延遲到目前腳本執行完畢後
+}
+
+/**
+ * 調整指定容器內所有相關 ruby 元素个字體大小。
+ * @param {HTMLElement} containerElement - 包含表格个容器元素。
+ */
+function adjustAllRubyFontSizes(containerElement) {
+  if (!isFirefox()) return;
+  console.log("Firefox: Adjusting ruby font sizes...");
+  // 只針對包含客家語个 td 裡背个 ruby 做調整
+  const rubyElements = containerElement.querySelectorAll('td[data-label="詞彙"] ruby');
+  rubyElements.forEach(rubyElement => {
+      // 在調整前先重設，確保 resize 時能從原始大小開始計算
+      rubyElement.style.fontSize = '';
+      adjustRubyFontSize(rubyElement);
+  });
+}
