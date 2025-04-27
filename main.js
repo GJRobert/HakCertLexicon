@@ -1972,6 +1972,7 @@ function debounce(func, wait, immediate) {
  * 並在 Firefox 中重新調整 Ruby 字體大小。
  */
 function handleResizeActions() {
+  console.log("Debounced resize event triggered. Calling scroll and font adjustment."); // 新增 log
   scrollToNowPlayingElement();
   // 取得表格容器，如果不存在就返回
   const contentContainer = document.getElementById('generated');
@@ -1988,12 +1989,13 @@ function handleResizeActions() {
 function scrollToNowPlayingElement() {
   // 直接尋找 id 為 nowPlaying 的元素
   const activeRow = document.getElementById('nowPlaying');
+  console.log("scrollToNowPlayingElement called. Found #nowPlaying:", activeRow); // 新增 log
 
   if (activeRow && activeRow.tagName === 'TR') {
     // 確保找到的是表格列
     console.log('視窗大小改變，捲動到:', activeRow);
     activeRow.scrollIntoView({
-      behavior: 'smooth', // 平滑捲動
+      behavior: 'smooth', // 平滑捲動 // 註解撇較即時，毋過試過後像形乜做得保留吔
       block: 'center', // 嘗試置中顯示
     });
   } else {
