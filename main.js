@@ -836,6 +836,26 @@ function buildTableAndSetupPlayback(
           this.innerHTML = '<i class="fas fa-pause"></i>';
           this.classList.add('ongoing');
           this.classList.remove('ended');
+
+          // **** ↓↓↓ 在這搭仔加入捲動程式碼 ↓↓↓ ****
+          console.log('Resuming playback, scrolling to current element.');
+          const nowPlayingElement = document.getElementById('nowPlaying');
+          if (nowPlayingElement) {
+              nowPlayingElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+              // 係講 nowPlaying id 無在 tr 項，就試看對 currentAudio 尋 tr
+              const rowElement = currentAudio?.closest('tr');
+              if (rowElement) {
+                  console.log('Resuming playback, scrolling to current audio parent TR.');
+                  rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // 做得擇：係講 nowPlaying 無在，做得考慮加歸去
+                  // addNowPlaying(rowElement);
+              } else {
+                  console.warn('Resume scroll: Could not find #nowPlaying or parent TR for current audio.');
+              }
+          }
+          // **** ↑↑↑ 加入煞 ↑↑↑ ****
+
         } else {
           currentAudio?.pause();
           isPaused = true;
@@ -1088,10 +1108,34 @@ function buildTableAndSetupPlayback(
 
 /* 最頂端一開始讀取進度 */
 document.addEventListener('DOMContentLoaded', function () {
-  // --- 新增：處理腔別級別連結點擊 ---
-  const dialectLevelLinks = document.querySelectorAll('.dialect a');
-  // const dialectSpans = document.querySelectorAll('.dialect'); // 取得所有 span // 不再需要
+  // --- 檢查 URL 協定 ---
+  let isFileProtocol = false;
+  if (window.location.protocol === 'file:') {
+    isFileProtocol = true;
+    document.title = '💻 ' + document.title;
+    console.log('偵測到 file:// 協定，已修改網頁標題。');
+  }
 
+  // --- 統一獲取常用元素 ---
+  const progressDropdown = document.getElementById('progressDropdown');
+  const progressDetailsSpan = document.getElementById('progressDetails');
+  const contentContainer = document.getElementById('generated');
+  const header = document.getElementById('header');
+  const backToTopButton = document.getElementById('backToTopBtn');
+  const autoplayModal = document.getElementById('autoplayModal');
+  const modalContent = autoplayModal ? autoplayModal.querySelector('.modal-content') : null; // 處理 modal 可能不存在个情況
+  const dialectLevelLinks = document.querySelectorAll('.dialect a');
+
+  // --- 新增：在 #progressDropdown 頭前加入 emoji ---
+  if (isFileProtocol && progressDropdown && progressDropdown.parentNode) {
+    const emojiNode = document.createTextNode('💻 ');
+    progressDropdown.parentNode.insertBefore(emojiNode, progressDropdown);
+    console.log('既經在 #progressDropdown 頭前加入 emoji。');
+  } else if (isFileProtocol && !progressDropdown) {
+    console.warn('尋毋著 #progressDropdown 還係厥爸元素，無法度加入 emoji。');
+  }
+
+  // --- 新增：處理腔別級別連結點擊 ---
   dialectLevelLinks.forEach((link) => {
     link.addEventListener('click', function (event) {
       event.preventDefault(); // 防止頁面跳轉
@@ -1139,8 +1183,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   updateProgressDropdown();
 
-  const backToTopButton = document.getElementById('backToTopBtn');
-
   // 當捲動超過一定距離時顯示按鈕
   window.onscroll = function () {
     if (
@@ -1163,9 +1205,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // --- 下拉選單選擇事件 ---
-  const progressDropdown = document.getElementById('progressDropdown');
-  const progressDetailsSpan = document.getElementById('progressDetails'); // 移到這裡方便共用
-
   if (progressDropdown) {
     progressDropdown.addEventListener('change', function (event) {
       const selectedValue = this.value;
@@ -1269,6 +1308,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const levelParam = urlParams.get('level');
   const categoryParam = urlParams.get('category'); // 這是編碼過的
   const rowParam = urlParams.get('row');
+  let successfullyLoadedFromUrl = false; // <--- 用這隻新變數來追蹤
 
   if (dialectParam && levelParam && categoryParam && rowParam) {
     console.log(
@@ -1337,7 +1377,8 @@ document.addEventListener('DOMContentLoaded', function () {
             console.log('Modal clicked, starting playback...');
             autoplayModal.style.display = 'none';
             // 在使用者互動後呼叫 generate
-            generate(dataObject, decodedCategory, rowParam);
+            generate(dataObject, decodedCategory, rowParam); // generate 會處理內容顯示摎播放
+            successfullyLoadedFromUrl = true; // <--- 在成功呼叫 generate 後設定
 
             // --- (可選) 更新下拉選單狀態 ---
             if (progressDropdown) {
@@ -1397,6 +1438,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'Modal not found, attempting direct generation (autoplay might fail).'
           );
           generate(dataObject, decodedCategory, rowParam);
+          successfullyLoadedFromUrl = true; // <--- 在成功呼叫 generate 後設定
           // ... (對應的下拉選單更新邏輯) ...
         }
         // --- 修改結束 ---
@@ -1409,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // 可以在這裡顯示錯誤訊息或預設內容
         const contentContainer = document.getElementById('generated');
         if (contentContainer)
-          contentContainer.innerHTML = '<p>載入資料時發生錯誤。</p>';
+          contentContainer.innerHTML = '<p>載入資料个時節搣毋著。</p>';
         if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
       }
     } else {
@@ -1423,44 +1465,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   } else {
     console.log('No valid URL parameters found for auto-generation on load.');
-    // 如果沒有 URL 參數，顯示提示訊息
-    const contentContainer = document.getElementById('generated');
-    if (contentContainer && contentContainer.innerHTML.trim() === '') {
-      // 只有在內容為空時才顯示提示
-      contentContainer.innerHTML =
-        '<p style="text-align: center; margin-top: 20px;">請點擊上方連結選擇腔調與級別。</p>';
-    }
-    // 確保 header 控制鈕被移除
-    const header = document.getElementById('header');
-    header?.querySelector('#audioControls')?.remove(); // 使用 Optional Chaining
-    if (progressDetailsSpan) progressDetailsSpan.textContent = ''; // 清除文字
   }
-  // --- 新增結束 ---
 
-  // --- 新增：如果沒有 URL 參數，確保清除所有 active 狀態 ---
-  // 這個區塊會在上面的 if/else 執行完畢 *之後* 執行
-  // 它的目的是確保，如果頁面不是透過完整的 URL 參數載入的
-  // (也就是說，上面的 if 條件不成立，或者雖然成立但 generate 還沒執行或失敗)
-  // 那麼就強制清除所有可能的 active 狀態，回到初始視覺效果。
-  if (!urlParams.has('dialect')) {
-    // 檢查是否有 URL 參數觸發 generate
+  // --- 最後个清理邏輯 (根據 successfullyLoadedFromUrl 判斷) ---
+  if (!successfullyLoadedFromUrl) {
+    console.log('Page was not successfully loaded via URL params, ensuring clean initial state.');
+    // 清除 active 狀態
     document.querySelectorAll('span[data-varname]').forEach((span) =>
       span.classList.remove('active-dialect-level')
     );
     document.querySelectorAll('.radioItem').forEach((label) => {
       label.classList.remove('active-category');
     });
-    // 確保 header 控制鈕被移除 (這部分你已經有了)
-    const header = document.getElementById('header');
+    // 移除播放控制按鈕
     header?.querySelector('#audioControls')?.remove();
-    const progressDetailsSpan = document.getElementById('progressDetails');
+    // 清除進度詳情
     if (progressDetailsSpan) progressDetailsSpan.textContent = '';
-    // 顯示初始提示 (這部分你已經有了)
-    const contentContainer = document.getElementById('generated');
+    // 顯示預設提示 (如果內容為空)
     if (contentContainer && contentContainer.innerHTML.trim() === '') {
       contentContainer.innerHTML =
-        '<p style="text-align: center; margin-top: 20px;">請點擊上方連結選擇腔調與級別。</p>';
+        '<p style="text-align: center; margin-top: 20px;">請點頂項連結擇腔調同級別。</p>';
     }
+    // 確保下拉選單選在預設值
+    if (progressDropdown) progressDropdown.selectedIndex = 0;
   }
 });
 

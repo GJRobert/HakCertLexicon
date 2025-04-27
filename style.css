@@ -91,6 +91,9 @@
     color: blue;
   }
 }
+.sentence rt {
+  font-size: 70%;
+}
 
 :root {
   --main-text-color: #245d48;
