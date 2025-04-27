@@ -1005,8 +1005,8 @@ function buildTableAndSetupPlayback(
             const linkElement = document.createElement('a');
             linkElement.href = shareURL;
             linkElement.textContent = linkText;
-            linkElement.target = '_blank'; // 可選：在新分頁開啟
-            linkElement.rel = 'noopener noreferrer'; // 安全性考量
+            // linkElement.target = '_blank'; // 可選：在新分頁開啟
+            // linkElement.rel = 'noopener noreferrer'; // 安全性考量
             linkElement.style.marginLeft = '5px'; // 加點間距
 
             // 清空 span 並加入連結
@@ -1267,8 +1267,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 const linkElement = document.createElement('a');
                 linkElement.href = shareURL;
                 linkElement.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
-                linkElement.target = '_blank';
-                linkElement.rel = 'noopener noreferrer';
+                // linkElement.target = '_blank';
+                // linkElement.rel = 'noopener noreferrer';
                 linkElement.style.marginLeft = '5px';
 
                 progressDetailsSpan.innerHTML = '';
@@ -1914,8 +1914,8 @@ function saveBookmark(rowId, percentage, category, tableName) {
         const linkElement = document.createElement('a');
         linkElement.href = shareURL;
         linkElement.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
-        linkElement.target = '_blank'; // 可選：在新分頁開啟
-        linkElement.rel = 'noopener noreferrer'; // 安全性考量
+        // linkElement.target = '_blank'; // 可選：在新分頁開啟
+        // linkElement.rel = 'noopener noreferrer'; // 安全性考量
         linkElement.style.marginLeft = '5px'; // 加點間距
 
         // 清空 span 並加入連結
