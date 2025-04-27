@@ -451,6 +451,7 @@ function buildTableAndSetupPlayback(
       // TD1: 編號 & 控制按鈕
       const td1 = document.createElement('td');
       td1.className = 'no';
+      td1.dataset.label = '編號'; // <-- 加入 data-label
       const anchor = document.createElement('a');
       anchor.name = no[1]; // 使用 '001', '002' 等格式
       td1.appendChild(anchor);
@@ -475,6 +476,7 @@ function buildTableAndSetupPlayback(
 
       // TD2: 詞彙、標音、音檔、意義、備註
       const td2 = document.createElement('td');
+      td2.dataset.label = '詞彙'; // <-- 加入 data-label
       const ruby = document.createElement('ruby');
       ruby.textContent = line.客家語;
       const rt = document.createElement('rt');
@@ -508,6 +510,7 @@ function buildTableAndSetupPlayback(
 
       // TD3: 例句、音檔、翻譯
       const td3 = document.createElement('td');
+      td3.dataset.label = '例句'; // <-- 加入 data-label
       if (line.例句 && line.例句.trim() !== '') {
         const sentenceSpan = document.createElement('span');
         sentenceSpan.className = 'sentence';
