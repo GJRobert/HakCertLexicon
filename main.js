@@ -1139,7 +1139,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const header = document.getElementById('header');
   const backToTopButton = document.getElementById('backToTopBtn');
   const autoplayModal = document.getElementById('autoplayModal');
-  const modalContent = autoplayModal ? autoplayModal.querySelector('.modal-content') : null; // 處理 modal 可能不存在个情況
+  const modalContent = autoplayModal
+    ? autoplayModal.querySelector('.modal-content')
+    : null; // 處理 modal 可能不存在个情況
   const dialectLevelLinks = document.querySelectorAll('.dialect a');
 
   // --- 新增：在 #progressDropdown 頭前加入 emoji ---
@@ -1483,13 +1485,55 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('No valid URL parameters found for auto-generation on load.');
   }
 
+  // --- 新增：使用 ResizeObserver 監聽表格容器大小變化 ---
+  if (contentContainer && window.ResizeObserver) {
+    console.log('Setting up ResizeObserver for #generated container.');
+
+    // Debounced scroll function specifically for the observer
+    const debouncedScrollOnResize = debounce(() => {
+      console.log(
+        'ResizeObserver triggered (debounced). Checking for #nowPlaying.'
+      );
+      const activeRow = document.getElementById('nowPlaying');
+      if (activeRow) {
+        console.log(
+          'ResizeObserver: Found #nowPlaying, calling scrollToNowPlayingElement.'
+        );
+        scrollToNowPlayingElement();
+      } else {
+        console.log('ResizeObserver: #nowPlaying not found, skipping scroll.');
+      }
+    }, 250); // Use the same debounce delay as window resize
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      // We don't need to inspect entries in detail, just trigger the debounced scroll
+      debouncedScrollOnResize();
+    });
+
+    // Start observing the container
+    resizeObserver.observe(contentContainer);
+
+    // Optional: Consider disconnecting the observer if the app structure changes significantly
+    // window.addEventListener('beforeunload', () => {
+    //     resizeObserver.disconnect();
+    // });
+  } else if (!window.ResizeObserver) {
+    console.warn(
+      'ResizeObserver API not supported in this browser. Font size change scrolling might be less reliable.'
+    );
+  } else if (!contentContainer) {
+    console.error('Could not find #generated container to observe.');
+  }
+
   // --- 最後个清理邏輯 (根據 successfullyLoadedFromUrl 判斷) ---
   if (!successfullyLoadedFromUrl) {
-    console.log('Page was not successfully loaded via URL params, ensuring clean initial state.');
-    // 清除 active 狀態
-    document.querySelectorAll('span[data-varname]').forEach((span) =>
-      span.classList.remove('active-dialect-level')
+    console.log(
+      'Page was not successfully loaded via URL params, ensuring clean initial state.'
     );
+    // 清除 active 狀態
+    document
+      .querySelectorAll('span[data-varname]')
+      .forEach((span) => span.classList.remove('active-dialect-level'));
     document.querySelectorAll('.radioItem').forEach((label) => {
       label.classList.remove('active-category');
     });
