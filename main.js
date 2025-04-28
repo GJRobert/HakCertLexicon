@@ -571,6 +571,9 @@ function buildTableAndSetupPlayback(
     大埔低升異化();
   }
 
+  console.log("Table generated, calling handleResizeActions initially."); // 加一條 log
+  handleResizeActions(); // 產生表格後黏時先做一擺調整 ruby 字體大細
+
   // --- 將原本在 generate 內部 radio change listener 中的播放/書籤設定邏輯搬移至此 ---
   // --- 並將其包裝以便重複使用和觸發 ---
 
@@ -1032,8 +1035,8 @@ function buildTableAndSetupPlayback(
         }
         // --- 修改結束 ---
 
-        // 捲動到目標行
-        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 捲動到目標行 <-- Roo 移除此處捲動，讓 playAudio 統一處理
+        // targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         // 找到該行的播放按鈕
         const playButton = targetRow.querySelector(
@@ -1972,14 +1975,29 @@ function debounce(func, wait, immediate) {
  * 並在 Firefox 中重新調整 Ruby 字體大小。
  */
 function handleResizeActions() {
-  console.log("Debounced resize event triggered. Calling scroll and font adjustment."); // 新增 log
+  console.log(
+    'Debounced resize event triggered. Calling scroll and font adjustment.'
+  ); // 新增 log
   scrollToNowPlayingElement();
   // 取得表格容器，如果不存在就返回
   const contentContainer = document.getElementById('generated');
   if (contentContainer) {
-      adjustAllRubyFontSizes(contentContainer);
+    adjustAllRubyFontSizes(contentContainer);
   } else {
-      console.warn("Resize handler: Could not find #generated container for font adjustment.");
+    console.warn(
+      'Resize handler: Could not find #generated container for font adjustment.'
+    );
+  }
+  // 淨在 #nowPlaying 存在个時節正捲動
+  const activeRow = document.getElementById('nowPlaying');
+  if (activeRow) {
+    console.log(
+      'Resize handler: Found #nowPlaying, calling scrollToNowPlayingElement.'
+    );
+    scrollToNowPlayingElement(); // 呼叫原本个捲動函式
+  } else {
+    // 係講尋毋著，就毋做捲動，單淨印 log
+    console.log('Resize handler: #nowPlaying not found, skipping scroll.');
   }
 }
 
