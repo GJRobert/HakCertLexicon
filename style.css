@@ -135,7 +135,7 @@ body {
 }
 body,
 body * {
-  font-family: Iansui, tauhu-oo, serif;
+  font-family: Iansui, '霞鶩文楷 TC', 'LXGW WenKai', tauhu-oo, serif;
   line-height: 1.8em;
   color: var(--main-text-color);
 }
@@ -671,6 +671,7 @@ span[data-varname].active-dialect-level {
     font-weight: bold;
     white-space: nowrap; /* 標籤毋換行 */
     color: var(--main-text-color); /* 確保標籤顏色 */
+    font-size: 0.7em; /* Aiuanyu：狹螢幕个 data-label 字毋使恁大 *//* 會㖸死，「真人寫个」還愛特別註明 */
   }
 
   /* 調整特定欄位个樣式 */
