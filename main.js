@@ -800,11 +800,28 @@ function buildTableAndSetupPlayback(
           once: true,
         });
 
+        // 尋找 audio 元素个父層 tr 同 td
         const rowElement = currentAudio.closest('tr');
+        const audioTd = currentAudio.closest('td'); // <--- 尋包含 audio 个 td
+
         if (rowElement) {
-          addNowPlaying(rowElement);
+          addNowPlaying(rowElement); // 樣式還係加在 tr 項
+        }
+
+        if (audioTd) { // <--- 改成檢查 audioTd
+          console.log('Scrolling to audio TD:', audioTd); // 加 log 方便除錯
+          // 對尋到个 td 執行 scrollIntoView
+          audioTd.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',   // 試看啊用 'center' 或者 'nearest'
+            inline: 'nearest' // 確保水平方向也盡量滾入畫面
+          });
+        } else if (rowElement) {
+          // 萬一尋無 td (理論上毋會)，退回捲動 tr
+          console.warn('Could not find audio TD, falling back to scroll TR.');
           rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
+
       })
       .catch((error) => {
         console.error(
@@ -959,29 +976,32 @@ function buildTableAndSetupPlayback(
           if (nowPlayingRow) nowPlayingRow.classList.remove('paused-playback'); // <--- 拿掉暫停 class
 
           // **** ↓↓↓ 在這搭仔加入捲動程式碼 ↓↓↓ ****
-          console.log('Resuming playback, scrolling to current element.');
-          const nowPlayingElement = document.getElementById('nowPlaying');
-          if (nowPlayingElement) {
-            nowPlayingElement.scrollIntoView({
+          console.log(
+            'Resuming playback, attempting to scroll to current audio TD.'
+          );
+          // 直接對 currentAudio 尋佢个 td
+          const audioTd = currentAudio?.closest('td');
+          if (audioTd) {
+            console.log('Resuming playback, scrolling to current audio TD.');
+            audioTd.scrollIntoView({
               behavior: 'smooth',
-              block: 'center',
+              block: 'center', // 或者 'nearest'
+              inline: 'nearest',
             });
           } else {
-            // 係講 nowPlaying id 無在 tr 項，就試看對 currentAudio 尋 tr
-            const rowElement = currentAudio?.closest('tr');
-            if (rowElement) {
-              console.log(
-                'Resuming playback, scrolling to current audio parent TR.'
+            // 萬一尋無 audioTd，試看啊捲動 tr 做備用
+            const nowPlayingElement = document.getElementById('nowPlaying');
+            if (nowPlayingElement) {
+              console.warn(
+                'Resume scroll: Could not find audio TD, falling back to scroll TR (#nowPlaying).'
               );
-              rowElement.scrollIntoView({
+              nowPlayingElement.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center',
               });
-              // 做得擇：係講 nowPlaying 無在，做得考慮加歸去
-              // addNowPlaying(rowElement);
             } else {
               console.warn(
-                'Resume scroll: Could not find #nowPlaying or parent TR for current audio.'
+                'Resume scroll: Could not find parent TD for current audio or #nowPlaying TR.'
               );
             }
           }
@@ -2201,25 +2221,37 @@ function handleResizeActions() {
 /**
  * 捲動到目前具有 'nowPlaying' ID 的元素 (正在播放或暫停的列)
  */
+/**
+ * 捲動到目前具有 'nowPlaying' ID 的列中，包含 currentAudio 的 TD 元素。
+ */
 function scrollToNowPlayingElement() {
-  // 直接尋找 id 為 nowPlaying 的元素
+  // 先尋著有 'nowPlaying' ID 个 tr
   const activeRow = document.getElementById('nowPlaying');
-  console.log(
-    'scrollToNowPlayingElement called. Found #nowPlaying:',
-    activeRow
-  ); // 新增 log
+  console.log('scrollToNowPlayingElement called. Found #nowPlaying TR:', activeRow);
 
-  if (activeRow && activeRow.tagName === 'TR') {
-    // 確保找到的是表格列
-    console.log('視窗大小改變，捲動到:', activeRow);
-    activeRow.scrollIntoView({
-      behavior: 'smooth', // 平滑捲動 // 註解撇較即時，毋過試過後像形乜做得保留吔
-      block: 'center', // 嘗試置中顯示
-    });
+  // 確定 activeRow 同 currentAudio (目前播放或暫停个音檔) 都存在
+  if (activeRow && currentAudio) {
+    // 對 currentAudio 尋佢所在个 td
+    const audioTd = currentAudio.closest('td');
+
+    // 確定尋著 td，而且該 td 確實在 activeRow 裡肚
+    if (audioTd && activeRow.contains(audioTd)) {
+      console.log('Scrolling to audio TD within #nowPlaying TR:', audioTd);
+      audioTd.scrollIntoView({
+        behavior: 'smooth', // 在 resize 時節用 smooth 可能較好
+        block: 'center',   // 'nearest' 在 resize 時較毋會跳恁大力
+        inline: 'nearest'
+      });
+    } else {
+      console.warn('scrollToNowPlayingElement: Could not find audio TD or it is not within #nowPlaying TR. Falling back to scroll TR.');
+      // 萬一尋無正確个 td，退回捲動歸列 tr
+      activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   } else {
-    console.log('視窗大小改變，但找不到 #nowPlaying 元素。');
+    console.log('scrollToNowPlayingElement: #nowPlaying TR or currentAudio reference not found. Skipping scroll.');
   }
 }
+
 
 // 監聽 window 的 resize 事件，並使用 debounce 處理
 // 這裡設定 250 毫秒，表示停止調整大小 250ms 後才執行捲動和字體調整
