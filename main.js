@@ -230,7 +230,7 @@ function generate(content, initialCategory = null, targetRowId = null) {
   // --- 保留結束 ---
 
   categoryList = []; // 在 generate() 裡面清空類別列表，恁仔做得確保每擺切換腔調級別个時節，都會用全新个類別列表。
-  
+
   var contentContainer = document.getElementById('generated');
   contentContainer.innerHTML = ''; // 清空顯示區域
 
@@ -359,10 +359,17 @@ function buildTableAndSetupPlayback(
 ) {
   // 獲取類別列表和目前索引
   const radioButtons = document.querySelectorAll('input[name="category"]');
-  categoryList = Array.from(radioButtons).map(radio => radio.value);
+  categoryList = Array.from(radioButtons).map((radio) => radio.value);
   const checkedRadio = document.querySelector('input[name="category"]:checked');
-  currentCategoryIndex = checkedRadio ? categoryList.indexOf(checkedRadio.value) : -1;
-  console.log("Current categories:", categoryList, "Current index:", currentCategoryIndex); // Debug log
+  currentCategoryIndex = checkedRadio
+    ? categoryList.indexOf(checkedRadio.value)
+    : -1;
+  console.log(
+    'Current categories:',
+    categoryList,
+    'Current index:',
+    currentCategoryIndex
+  ); // Debug log
 
   const contentContainer = document.getElementById('generated');
   contentContainer.innerHTML = ''; // 清空，確保只顯示當前分類的內容
@@ -571,7 +578,7 @@ function buildTableAndSetupPlayback(
     大埔低升異化();
   }
 
-  console.log("Table generated, calling handleResizeActions initially."); // 加一條 log
+  console.log('Table generated, calling handleResizeActions initially.'); // 加一條 log
   handleResizeActions(); // 產生表格後黏時先做一擺調整 ruby 字體大細
 
   // --- 將原本在 generate 內部 radio change listener 中的播放/書籤設定邏輯搬移至此 ---
@@ -601,73 +608,97 @@ function buildTableAndSetupPlayback(
   }
   // --- 抽離出播放結束音效和重置狀態的邏輯 ---
   function playEndOfPlayback() {
-       const endAudio = new Audio('endOfPlay.mp3');
-       endAudio.play().catch((e) => console.error('播放結束音效失敗:', e));
-       currentAudioIndex = 0;
-       isPlaying = false;
-       isPaused = false;
-       currentAudio = null;
-       const pauseResumeButton = document.getElementById('pauseResumeBtn'); // 需要重新獲取按鈕引用
-       const stopButton = document.getElementById('stopBtn'); // 需要重新獲取按鈕引用
-       if (pauseResumeButton) pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
-       if (pauseResumeButton) pauseResumeButton.classList.remove('ongoing');
-       if (pauseResumeButton) pauseResumeButton.classList.add('ended');
-       if (stopButton) stopButton.classList.remove('ongoing');
-       if (stopButton) stopButton.classList.add('ended');
-       document.querySelectorAll('.playFromThisRow').forEach((element) => {
-           element.classList.remove('ongoing');
-           element.classList.add('playable');
-       });
-       removeNowPlaying();
-       isCrossCategoryPlaying = false; // 確保標記被重設
+    const endAudio = new Audio('endOfPlay.mp3');
+    endAudio.play().catch((e) => console.error('播放結束音效失敗:', e));
+    currentAudioIndex = 0;
+    isPlaying = false;
+    isPaused = false;
+    currentAudio = null;
+    const pauseResumeButton = document.getElementById('pauseResumeBtn'); // 需要重新獲取按鈕引用
+    const stopButton = document.getElementById('stopBtn'); // 需要重新獲取按鈕引用
+    if (pauseResumeButton)
+      pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+    if (pauseResumeButton) pauseResumeButton.classList.remove('ongoing');
+    if (pauseResumeButton) pauseResumeButton.classList.add('ended');
+    if (stopButton) stopButton.classList.remove('ongoing');
+    if (stopButton) stopButton.classList.add('ended');
+    document.querySelectorAll('.playFromThisRow').forEach((element) => {
+      element.classList.remove('ongoing');
+      element.classList.add('playable');
+    });
+    removeNowPlaying();
+    isCrossCategoryPlaying = false; // 確保標記被重設
   }
   // --- 抽離結束 ---
 
   function playAudio(index) {
     // 獲取類別列表和目前索引，並將其設為 currentCategoryIndex
     const radioButtons = document.querySelectorAll('input[name="category"]');
-    categoryList = Array.from(radioButtons).map(radio => radio.value);
-    const checkedRadio = document.querySelector('input[name="category"]:checked');
-    currentCategoryIndex = checkedRadio ? categoryList.indexOf(checkedRadio.value) : -1;
-    console.log("Current categories (inside playAudio):", categoryList, "Current index:", currentCategoryIndex);
+    categoryList = Array.from(radioButtons).map((radio) => radio.value);
+    const checkedRadio = document.querySelector(
+      'input[name="category"]:checked'
+    );
+    currentCategoryIndex = checkedRadio
+      ? categoryList.indexOf(checkedRadio.value)
+      : -1;
+    console.log(
+      'Current categories (inside playAudio):',
+      categoryList,
+      'Current index:',
+      currentCategoryIndex
+    );
 
     // 獲取當前類別的 audioElements (因為 audioElements 是 buildTableAndSetupPlayback 的局部變數)
     const currentCategoryAudioElements = audioElementsList; // 使用 buildTableAndSetupPlayback 內部的 audioElementsList
 
     if (index >= currentCategoryAudioElements.length) {
-        console.log("Reached end of category. Current index:", currentCategoryIndex, "Total categories:", categoryList.length);
-        const nextCategoryIndex = currentCategoryIndex + 1;
-        if (nextCategoryIndex < categoryList.length) {
-            const nextCategoryValue = categoryList[nextCategoryIndex];
-            const nextRadioButton = document.querySelector(`input[name="category"][value="${nextCategoryValue}"]`);
-            if (nextRadioButton) {
-                console.log(`Switching to next category: ${nextCategoryValue}`);
-                console.log(`Storing finished category: ${dialectInfo.fullLvlName} - ${category}`); // Debug
-                finishedTableName = dialectInfo.fullLvlName; // 儲存剛完成的表格名稱
-                finishedCat = category; // 儲存剛完成的類別
-                isCrossCategoryPlaying = true; // 設定標記
-                // 確保停止目前的播放狀態視覺效果
-                const stopButton = document.getElementById('stopBtn'); // 獲取停止按鈕
-                if (stopButton && isPlaying) { // 只有在播放中才需要點擊停止
-                   console.log("Stopping current playback before switching category...");
-                   stopButton.click(); // 模擬點擊停止按鈕來清理狀態
-                }
-                // 使用 setTimeout 確保狀態清理完成
-                setTimeout(() => {
-                    console.log("Clicking next radio button...");
-                    nextRadioButton.click(); // 觸發切換類別
-                }, 50); // 短暫延遲
-            } else {
-                console.error(`Could not find radio button for next category: ${nextCategoryValue}`);
-                // 找不到下一個類別按鈕，執行停止邏輯
-                playEndOfPlayback();
-            }
+      console.log(
+        'Reached end of category. Current index:',
+        currentCategoryIndex,
+        'Total categories:',
+        categoryList.length
+      );
+      const nextCategoryIndex = currentCategoryIndex + 1;
+      if (nextCategoryIndex < categoryList.length) {
+        const nextCategoryValue = categoryList[nextCategoryIndex];
+        const nextRadioButton = document.querySelector(
+          `input[name="category"][value="${nextCategoryValue}"]`
+        );
+        if (nextRadioButton) {
+          console.log(`Switching to next category: ${nextCategoryValue}`);
+          console.log(
+            `Storing finished category: ${dialectInfo.fullLvlName} - ${category}`
+          ); // Debug
+          finishedTableName = dialectInfo.fullLvlName; // 儲存剛完成的表格名稱
+          finishedCat = category; // 儲存剛完成的類別
+          isCrossCategoryPlaying = true; // 設定標記
+          // 確保停止目前的播放狀態視覺效果
+          const stopButton = document.getElementById('stopBtn'); // 獲取停止按鈕
+          if (stopButton && isPlaying) {
+            // 只有在播放中才需要點擊停止
+            console.log(
+              'Stopping current playback before switching category...'
+            );
+            stopButton.click(); // 模擬點擊停止按鈕來清理狀態
+          }
+          // 使用 setTimeout 確保狀態清理完成
+          setTimeout(() => {
+            console.log('Clicking next radio button...');
+            nextRadioButton.click(); // 觸發切換類別
+          }, 50); // 短暫延遲
         } else {
-            console.log("Reached end of all categories.");
-            // 已經是最後一個類別，執行停止邏輯
-            playEndOfPlayback();
+          console.error(
+            `Could not find radio button for next category: ${nextCategoryValue}`
+          );
+          // 找不到下一個類別按鈕，執行停止邏輯
+          playEndOfPlayback();
         }
-        return; // 無論如何都返回，避免執行後續的播放邏輯
+      } else {
+        console.log('Reached end of all categories.');
+        // 已經是最後一個類別，執行停止邏輯
+        playEndOfPlayback();
+      }
+      return; // 無論如何都返回，避免執行後續的播放邏輯
     }
 
     // 使用當前類別的音檔列表
@@ -851,21 +882,30 @@ function buildTableAndSetupPlayback(
           console.log('Resuming playback, scrolling to current element.');
           const nowPlayingElement = document.getElementById('nowPlaying');
           if (nowPlayingElement) {
-              nowPlayingElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            nowPlayingElement.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+            });
           } else {
-              // 係講 nowPlaying id 無在 tr 項，就試看對 currentAudio 尋 tr
-              const rowElement = currentAudio?.closest('tr');
-              if (rowElement) {
-                  console.log('Resuming playback, scrolling to current audio parent TR.');
-                  rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  // 做得擇：係講 nowPlaying 無在，做得考慮加歸去
-                  // addNowPlaying(rowElement);
-              } else {
-                  console.warn('Resume scroll: Could not find #nowPlaying or parent TR for current audio.');
-              }
+            // 係講 nowPlaying id 無在 tr 項，就試看對 currentAudio 尋 tr
+            const rowElement = currentAudio?.closest('tr');
+            if (rowElement) {
+              console.log(
+                'Resuming playback, scrolling to current audio parent TR.'
+              );
+              rowElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+              });
+              // 做得擇：係講 nowPlaying 無在，做得考慮加歸去
+              // addNowPlaying(rowElement);
+            } else {
+              console.warn(
+                'Resume scroll: Could not find #nowPlaying or parent TR for current audio.'
+              );
+            }
           }
           // **** ↑↑↑ 加入煞 ↑↑↑ ****
-
         } else {
           currentAudio?.pause();
           isPaused = true;
@@ -873,7 +913,6 @@ function buildTableAndSetupPlayback(
           this.classList.remove('ongoing');
           this.classList.add('ended'); // Or a specific paused style
           if (nowPlayingRow) nowPlayingRow.classList.add('paused-playback'); // <--- 加入暫停 class
-          
         }
       }
     };
@@ -1075,51 +1114,64 @@ function buildTableAndSetupPlayback(
 
     // --- 新增：處理跨類別連續播放 ---
     if (isCrossCategoryPlaying) {
-        console.log("Cross-category playback flag is true.");
-        // --- 書籤替換邏輯 ---
-        if (finishedTableName && finishedCat) {
-            console.log(`Attempting to replace bookmark for finished category: ${finishedTableName} - ${finishedCat}`);
-            let bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
-            const previousBookmarkIndex = bookmarks.findIndex(
-                (bm) => bm.tableName === finishedTableName && bm.cat === finishedCat
-            );
-            if (previousBookmarkIndex > -1) {
-                console.log(`Found finished bookmark at index ${previousBookmarkIndex}. Removing it.`);
-                bookmarks.splice(previousBookmarkIndex, 1);
-                localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
-                // 更新下拉選單以反映移除 (雖然 saveBookmark 等下會再更新一次)
-                updateProgressDropdown();
-            } else {
-                console.log(`Could not find bookmark for finished category: ${finishedTableName} - ${finishedCat}`);
-            }
-            // 清除暫存變數
-            finishedTableName = null;
-            finishedCat = null;
+      console.log('Cross-category playback flag is true.');
+      // --- 書籤替換邏輯 ---
+      if (finishedTableName && finishedCat) {
+        console.log(
+          `Attempting to replace bookmark for finished category: ${finishedTableName} - ${finishedCat}`
+        );
+        let bookmarks =
+          JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+        const previousBookmarkIndex = bookmarks.findIndex(
+          (bm) => bm.tableName === finishedTableName && bm.cat === finishedCat
+        );
+        if (previousBookmarkIndex > -1) {
+          console.log(
+            `Found finished bookmark at index ${previousBookmarkIndex}. Removing it.`
+          );
+          bookmarks.splice(previousBookmarkIndex, 1);
+          localStorage.setItem('hakkaBookmarks', JSON.stringify(bookmarks));
+          // 更新下拉選單以反映移除 (雖然 saveBookmark 等下會再更新一次)
+          updateProgressDropdown();
         } else {
-             console.log("No finished category info found for bookmark replacement.");
+          console.log(
+            `Could not find bookmark for finished category: ${finishedTableName} - ${finishedCat}`
+          );
         }
-        // --- 書籤替換邏輯結束 ---
+        // 清除暫存變數
+        finishedTableName = null;
+        finishedCat = null;
+      } else {
+        console.log(
+          'No finished category info found for bookmark replacement.'
+        );
+      }
+      // --- 書籤替換邏輯結束 ---
 
-        console.log("Starting playback from beginning of the new category.");
-        const firstPlayButton = contentContainer.querySelector('.playFromThisRow'); // 找新建立表格的第一個播放按鈕
-        if (firstPlayButton) {
-             // 使用 setTimeout 確保 DOM 更新完成
-             setTimeout(() => {
-                console.log("Triggering playback for the first item of the new category.");
-                startPlayingFromRow(firstPlayButton); // 自動播放第一個
-             }, 100); // 短暫延遲
-        } else {
-            console.warn("Could not find the first play button for cross-category playback.");
-        }
-        // isCrossCategoryPlaying = false; // 不在這裡重設，在 playEndOfPlayback 或 startPlayingFromRow 重設
+      console.log('Starting playback from beginning of the new category.');
+      const firstPlayButton =
+        contentContainer.querySelector('.playFromThisRow'); // 找新建立表格的第一個播放按鈕
+      if (firstPlayButton) {
+        // 使用 setTimeout 確保 DOM 更新完成
+        setTimeout(() => {
+          console.log(
+            'Triggering playback for the first item of the new category.'
+          );
+          startPlayingFromRow(firstPlayButton); // 自動播放第一個
+        }, 100); // 短暫延遲
+      } else {
+        console.warn(
+          'Could not find the first play button for cross-category playback.'
+        );
+      }
+      // isCrossCategoryPlaying = false; // 不在這裡重設，在 playEndOfPlayback 或 startPlayingFromRow 重設
     }
     // --- 新增結束 ---
 
     // --- 新增：在 Firefox 中調整 Ruby 字體大小 ---
     adjustAllRubyFontSizes(contentContainer);
     // --- 新增結束 ---
-
-} // --- buildTableAndSetupPlayback 函式結束 ---
+  } // --- buildTableAndSetupPlayback 函式結束 ---
 } // <-- 添加遺漏的大括號
 
 /* 最頂端一開始讀取進度 */
@@ -1858,7 +1910,9 @@ function saveBookmark(rowId, percentage, category, tableName) {
   console.log(`新增紀錄: ${tableName} - ${category} 在行 ${rowId}`);
   // 3. 如果紀錄超過 10 筆，執行刪除邏輯
   if (bookmarks.length > 10) {
-    console.log(`紀錄超過 10 筆 (${bookmarks.length})，執行刪除邏輯。新紀錄: ${newBookmark.tableName} - ${newBookmark.cat}`);
+    console.log(
+      `紀錄超過 10 筆 (${bookmarks.length})，執行刪除邏輯。新紀錄: ${newBookmark.tableName} - ${newBookmark.cat}`
+    );
     let indexToDelete = -1;
     let foundMatch = false; // 用一個 flag 追蹤是否找到匹配
 
@@ -1866,7 +1920,9 @@ function saveBookmark(rowId, percentage, category, tableName) {
     // 修改迴圈條件，更簡潔，避免檢查索引 0
     for (let i = bookmarks.length - 1; i >= 1; i--) {
       const currentBookmark = bookmarks[i];
-      console.log(`  檢查索引 ${i}: ${currentBookmark.tableName} - ${currentBookmark.cat}`);
+      console.log(
+        `  檢查索引 ${i}: ${currentBookmark.tableName} - ${currentBookmark.cat}`
+      );
 
       // 檢查是否同表格且不同類別
       if (
@@ -1882,10 +1938,14 @@ function saveBookmark(rowId, percentage, category, tableName) {
       }
       // (可選) 增加其他情況的 log，幫助判斷為何沒匹配
       else if (currentBookmark.tableName === newBookmark.tableName) {
-          console.log(`  索引 ${i} 表格名稱相符，但類別相同 (${currentBookmark.cat})。跳過。`);
-          // 理論上不該發生，但 log 有助於確認
+        console.log(
+          `  索引 ${i} 表格名稱相符，但類別相同 (${currentBookmark.cat})。跳過。`
+        );
+        // 理論上不該發生，但 log 有助於確認
       } else {
-          console.log(`  索引 ${i} 表格名稱不符 (${currentBookmark.tableName})。跳過。`);
+        console.log(
+          `  索引 ${i} 表格名稱不符 (${currentBookmark.tableName})。跳過。`
+        );
       }
     }
 
@@ -1894,13 +1954,15 @@ function saveBookmark(rowId, percentage, category, tableName) {
       console.log(`執行刪除特定紀錄於索引 ${indexToDelete}`);
       bookmarks.splice(indexToDelete, 1);
     } else {
-      console.log('未找到符合條件的紀錄 (同表格，不同類別)。將刪除最舊的一筆 (索引 10)。');
+      console.log(
+        '未找到符合條件的紀錄 (同表格，不同類別)。將刪除最舊的一筆 (索引 10)。'
+      );
       // 確保索引 10 存在 (雖然 length > 10 應該保證了)
       if (bookmarks.length > 10) {
-          bookmarks.splice(10, 1);
+        bookmarks.splice(10, 1);
       } else {
-          // 理論上不該發生
-          console.warn("嘗試刪除索引 10，但書籤數量不足。");
+        // 理論上不該發生
+        console.warn('嘗試刪除索引 10，但書籤數量不足。');
       }
     }
   }
@@ -1911,19 +1973,19 @@ function saveBookmark(rowId, percentage, category, tableName) {
 
   // --- 新增：如果頁面是透過 URL 參數載入的，則在第一次儲存書籤後清除參數 ---
   if (loadedViaUrlParams) {
-      console.log("首次儲存書籤 (來自 URL 參數載入)，清除 URL 參數...");
-      // 取得目前的 URL 路徑部分 (不含查詢字串和 hash)
-      const newUrl = window.location.pathname;
-      try {
-          // 使用 replaceState 修改 URL 而不重新載入頁面，也不會留下舊的 URL 在歷史紀錄中
-          history.replaceState(null, '', newUrl);
-          console.log("URL 參數已清除。");
-          loadedViaUrlParams = false; // 將旗標設回 false，表示參數已處理完畢，避免後續重複清除
-      } catch (e) {
-          console.error("清除 URL 參數時發生錯誤:", e);
-          // 即使清除失敗，也將標記設為 false，避免無限嘗試
-          loadedViaUrlParams = false;
-      }
+    console.log('首次儲存書籤 (來自 URL 參數載入)，清除 URL 參數...');
+    // 取得目前的 URL 路徑部分 (不含查詢字串和 hash)
+    const newUrl = window.location.pathname;
+    try {
+      // 使用 replaceState 修改 URL 而不重新載入頁面，也不會留下舊的 URL 在歷史紀錄中
+      history.replaceState(null, '', newUrl);
+      console.log('URL 參數已清除。');
+      loadedViaUrlParams = false; // 將旗標設回 false，表示參數已處理完畢，避免後續重複清除
+    } catch (e) {
+      console.error('清除 URL 參數時發生錯誤:', e);
+      // 即使清除失敗，也將標記設為 false，避免無限嘗試
+      loadedViaUrlParams = false;
+    }
   }
 
   // --- 修改：強制選中剛儲存的進度並更新詳情為連結 ---
@@ -2051,7 +2113,10 @@ function handleResizeActions() {
 function scrollToNowPlayingElement() {
   // 直接尋找 id 為 nowPlaying 的元素
   const activeRow = document.getElementById('nowPlaying');
-  console.log("scrollToNowPlayingElement called. Found #nowPlaying:", activeRow); // 新增 log
+  console.log(
+    'scrollToNowPlayingElement called. Found #nowPlaying:',
+    activeRow
+  ); // 新增 log
 
   if (activeRow && activeRow.tagName === 'TR') {
     // 確保找到的是表格列
@@ -2094,7 +2159,9 @@ function adjustRubyFontSize(rubyElement) {
 
   // 用 setTimeout 確保樣式重設先生效
   setTimeout(() => {
-    const currentFontSize = parseFloat(window.getComputedStyle(rubyElement).fontSize);
+    const currentFontSize = parseFloat(
+      window.getComputedStyle(rubyElement).fontSize
+    );
     const rubyWidth = rubyElement.scrollWidth;
     // const tdWidth = tdElement.clientWidth; // <-- 原本个方式
 
@@ -2105,41 +2172,42 @@ function adjustRubyFontSize(rubyElement) {
     const buffer = 5; // 緩衝空間
 
     if (isCardMode) {
-        // 卡片模式：clientWidth 減去 paddingLeft (像素) 再減 buffer
-        const paddingLeftPx = parseFloat(computedTdStyle.paddingLeft);
-        // 考慮到 ::before 佔用个空間，再減去 buffer
-        availableWidth = tdElement.clientWidth - paddingLeftPx - buffer * 3; // 稍微多減一點 buffer
-        // console.log(`Card Mode: clientW=${tdElement.clientWidth}, padL=${paddingLeftPx}, availW=${availableWidth}`);
+      // 卡片模式：clientWidth 減去 paddingLeft (像素) 再減 buffer
+      const paddingLeftPx = parseFloat(computedTdStyle.paddingLeft);
+      // 考慮到 ::before 佔用个空間，再減去 buffer
+      availableWidth = tdElement.clientWidth - paddingLeftPx - buffer * 3; // 稍微多減一點 buffer
+      // console.log(`Card Mode: clientW=${tdElement.clientWidth}, padL=${paddingLeftPx}, availW=${availableWidth}`);
     } else {
-        // 寬螢幕模式：直接用 clientWidth 減 buffer
-        availableWidth = tdElement.clientWidth - buffer;
-        // console.log(`Wide Mode: clientW=${tdElement.clientWidth}, availW=${availableWidth}`);
+      // 寬螢幕模式：直接用 clientWidth 減 buffer
+      availableWidth = tdElement.clientWidth - buffer;
+      // console.log(`Wide Mode: clientW=${tdElement.clientWidth}, availW=${availableWidth}`);
     }
     // --- 新增結束 ---
 
-
-    if (rubyWidth > availableWidth) { // <-- 用 availableWidth 比較
+    if (rubyWidth > availableWidth) {
+      // <-- 用 availableWidth 比較
       // 按比例計算新字體大小，但設定下限
-      let newSize = Math.floor(currentFontSize * availableWidth / rubyWidth);
+      let newSize = Math.floor((currentFontSize * availableWidth) / rubyWidth);
       const minSize = 10; // 最小字體大小 (px)
       newSize = Math.max(newSize, minSize);
 
-      if (newSize < currentFontSize) { // 只有在需要縮小時才應用
-          // console.log(`Firefox: Adjusting ruby font size: ${rubyElement.textContent.substring(0,10)}... from ${currentFontSize}px to ${newSize}px`);
-          rubyElement.style.fontSize = `${newSize}px`;
+      if (newSize < currentFontSize) {
+        // 只有在需要縮小時才應用
+        // console.log(`Firefox: Adjusting ruby font size: ${rubyElement.textContent.substring(0,10)}... from ${currentFontSize}px to ${newSize}px`);
+        rubyElement.style.fontSize = `${newSize}px`;
       } else {
-         // 如果計算出个 newSize 無比 currentFontSize 細，愛確定拿忒 style.fontSize
-         if (rubyElement.style.fontSize) {
-             // console.log(`Firefox: Ruby fits or newSize >= currentSize, removing inline style.`);
-             rubyElement.style.fontSize = '';
-         }
+        // 如果計算出个 newSize 無比 currentFontSize 細，愛確定拿忒 style.fontSize
+        if (rubyElement.style.fontSize) {
+          // console.log(`Firefox: Ruby fits or newSize >= currentSize, removing inline style.`);
+          rubyElement.style.fontSize = '';
+        }
       }
     } else {
-        // 如果 ruby 元素闊度細過可用闊度，愛確定拿忒 style.fontSize
-        if (rubyElement.style.fontSize) {
-            // console.log(`Firefox: Ruby fits, removing inline style.`);
-            rubyElement.style.fontSize = '';
-        }
+      // 如果 ruby 元素闊度細過可用闊度，愛確定拿忒 style.fontSize
+      if (rubyElement.style.fontSize) {
+        // console.log(`Firefox: Ruby fits, removing inline style.`);
+        rubyElement.style.fontSize = '';
+      }
     }
   }, 0); // Timeout 0 通常會延遲到目前腳本執行完畢後
 }
@@ -2150,12 +2218,14 @@ function adjustRubyFontSize(rubyElement) {
  */
 function adjustAllRubyFontSizes(containerElement) {
   if (!isFirefox()) return;
-  console.log("Firefox: Adjusting ruby font sizes...");
+  console.log('Firefox: Adjusting ruby font sizes...');
   // 只針對包含客家語个 td 裡背个 ruby 做調整
-  const rubyElements = containerElement.querySelectorAll('td[data-label="詞彙"] ruby');
-  rubyElements.forEach(rubyElement => {
-      // 在調整前先重設，確保 resize 時能從原始大小開始計算
-      rubyElement.style.fontSize = '';
-      adjustRubyFontSize(rubyElement);
+  const rubyElements = containerElement.querySelectorAll(
+    'td[data-label="詞彙"] ruby'
+  );
+  rubyElements.forEach((rubyElement) => {
+    // 在調整前先重設，確保 resize 時能從原始大小開始計算
+    rubyElement.style.fontSize = '';
+    adjustRubyFontSize(rubyElement);
   });
 }
