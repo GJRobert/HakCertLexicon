@@ -1451,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const linkElement = document.createElement('a');
                 linkElement.href = shareURL;
-                linkElement.textContent = `${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`;
+                linkElement.textContent = `#${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`;
                 // linkElement.target = '_blank';
                 // linkElement.rel = 'noopener noreferrer';
                 linkElement.style.marginLeft = '5px';
@@ -1462,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   'Progress details updated with shareable link from dropdown.'
                 );
               } else {
-                progressDetailsSpan.textContent = `${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`; // Fallback text
+                progressDetailsSpan.textContent = `#${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`; // Fallback text
                 console.error(
                   '無法從 tableName 解析腔調和級別代碼:',
                   targetTableName
@@ -1955,7 +1955,7 @@ function updateProgressDropdown() {
         (bm) => bm.tableName + '||' + bm.cat === previousValue
       );
       if (selectedBookmark && progressDetailsSpan) {
-        progressDetailsSpan.textContent = `${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`;
+        progressDetailsSpan.textContent = `#${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`;
       }
       // --- 修改結束 ---
     } else {
@@ -2156,7 +2156,7 @@ function saveBookmark(rowId, percentage, category, tableName) {
         // 建立連結元素
         const linkElement = document.createElement('a');
         linkElement.href = shareURL;
-        linkElement.textContent = `${newBookmark.rowId} (${newBookmark.percentage}%)`;
+        linkElement.textContent = `#${newBookmark.rowId} (${newBookmark.percentage}%)`;
         // linkElement.target = '_blank'; // 可選：在新分頁開啟
         // linkElement.rel = 'noopener noreferrer'; // 安全性考量
         linkElement.style.marginLeft = '5px'; // 加點間距
@@ -2167,7 +2167,7 @@ function saveBookmark(rowId, percentage, category, tableName) {
         console.log('Progress details updated with shareable link.');
       } else {
         // 如果無法產生連結，只顯示文字
-        progressDetailsSpan.textContent = `${newBookmark.rowId} (${newBookmark.percentage}%)`;
+        progressDetailsSpan.textContent = `#${newBookmark.rowId} (${newBookmark.percentage}%)`;
         console.error('無法從 tableName 解析腔調和級別代碼:', tableName);
       }
     } else {
