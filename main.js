@@ -380,192 +380,274 @@ function buildTableAndSetupPlayback(
     return; // 如果 header 不存在，後續操作無意義
   }
 
-  // 同歸隻處理 headerTextSpan 个區塊刪除。因為𫣆俚毋會再過用 span 顯示文字，係直接用下拉擇單哩。
-
-  // --- 修改：將 progressDetailsSpan 的宣告移到函式開頭 ---
   const progressDetailsSpan = document.getElementById('progressDetails');
-  // --- 修改結束 ---
 
   console.log(
     `Building table for category: ${category}, autoPlayRow: ${autoPlayTargetRowId}`
   ); // 增加日誌
 
-  // --- 將原本在 generate 內部 radio change listener 中的表格建立邏輯搬移至此 ---
+  // --- *** 新增：先過濾出目前類別个詞彙 *** ---
+  const filteredItems = vocabularyArray.filter(
+    (line) => line.分類 && line.分類.includes(category)
+  );
+  console.log(`Category "${category}" has ${filteredItems.length} items.`); // 增加日誌
+
+  // --- *** 新增：處理空類別个情況 *** ---
+  if (filteredItems.length === 0) {
+    // 顯示空類別訊息
+    contentContainer.innerHTML = `<p style="text-align: center; margin-top: 20px;">${dialectInfo.級名} 無「${category}」个內容。</p>`;
+    // **移除** header 中的播放控制鈕 (因為這類別無東西好播)
+    header?.querySelector('#audioControls')?.remove(); // 使用 Optional Chaining 避免錯誤
+
+    // 檢查係無係在跨類別播放模式
+    if (isCrossCategoryPlaying) {
+      console.log(
+        `Empty category "${category}" encountered during cross-category playback.`
+      );
+      // 播放特殊音檔
+      const emptyAudio = new Audio('empty_category.mp3'); // <--- 請確定這隻檔案存在
+
+      emptyAudio.play().catch((e) => console.error('播放空類別音效失敗:', e));
+
+      // 監聽音檔結束事件
+      emptyAudio.addEventListener(
+        'ended',
+        () => {
+          isCrossCategoryPlaying = false; // <--- 在處理完空類別後重設旗標
+          console.log('Empty category audio finished.');
+          const nextCategoryIndex = currentCategoryIndex + 1;
+
+          // 檢查係無係還有下一隻類別
+          if (nextCategoryIndex < categoryList.length) {
+            const nextCategoryValue = categoryList[nextCategoryIndex];
+            const nextRadioButton = document.querySelector(
+              `input[name="category"][value="${nextCategoryValue}"]`
+            );
+            if (nextRadioButton) {
+              console.log(`Switching to next category: ${nextCategoryValue}`);
+              // --- 新增：在點擊前，先處理書籤替換 ---
+              if (finishedTableName && finishedCat) {
+                console.log(
+                  `Attempting to replace bookmark for finished (empty) category: ${finishedTableName} - ${finishedCat}`
+                );
+                let bookmarks =
+                  JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+                const previousBookmarkIndex = bookmarks.findIndex(
+                  (bm) =>
+                    bm.tableName === finishedTableName && bm.cat === finishedCat
+                );
+                if (previousBookmarkIndex > -1) {
+                  console.log(
+                    `Found finished bookmark at index ${previousBookmarkIndex}. Removing it.`
+                  );
+                  bookmarks.splice(previousBookmarkIndex, 1);
+                  localStorage.setItem(
+                    'hakkaBookmarks',
+                    JSON.stringify(bookmarks)
+                  );
+                  updateProgressDropdown(); // 更新下拉選單
+                } else {
+                  console.log(
+                    `Could not find bookmark for finished (empty) category: ${finishedTableName} - ${finishedCat}`
+                  );
+                }
+                // 清除暫存變數
+                finishedTableName = null;
+                finishedCat = null;
+              }
+              // --- 書籤替換結束 ---
+              isCrossCategoryPlaying = true; // <--- 在點擊下一隻 *前* 重新設定旗標
+              nextRadioButton.click(); // 觸發切換
+            } else {
+              console.error(
+                `Could not find radio button for next category after empty: ${nextCategoryValue}`
+              );
+              playEndOfPlayback(); // 尋毋著下一隻按鈕，結束播放
+            }
+          } else {
+            // 這係最尾一隻類別
+            console.log('Empty category was the last one.');
+            playEndOfPlayback(); // 結束播放
+          }
+        },
+        { once: true }
+      ); // 事件只觸發一次
+    } else {
+      // 非跨類別播放模式下選到空類別，單淨顯示訊息
+      console.log(`Empty category "${category}" selected manually.`);
+    }
+    return; // 結束 buildTableAndSetupPlayback 函式，毋使建立表格
+  }
+  // --- *** 空類別處理結束 *** ---
+
+  // --- 如果類別毋係空个，繼續執行原本个邏輯 ---
   var table = document.createElement('table');
   table.innerHTML = '';
   let rowIndex = 0; // 音檔索引計數器
   let audioElementsList = []; // 收集此分類的 audio 元素
   let bookmarkButtonsList = []; // 收集此分類的書籤按鈕
 
-  for (const line of vocabularyArray) {
-    if (line.分類 && line.分類.includes(category) == true) {
-      // --- 內部建立 tr, td, audio, button 的邏輯基本不變 ---
-      // --- 但需要使用傳入的 dialectInfo 物件來獲取變數 ---
-      let mediaYr = dialectInfo.generalMediaYr;
-      let pre112Insertion = '';
-      let 句目錄級 = dialectInfo.目錄級;
-      let mediaNo = ''; // 在迴圈內計算
+  // *** 修改：用 filteredItems 來建立表格 ***
+  for (const line of filteredItems) {
+    // --- 內部建立 tr, td, audio, button 的邏輯基本不變 ---
+    // --- 但需要使用傳入的 dialectInfo 物件來獲取變數 ---
+    let mediaYr = dialectInfo.generalMediaYr;
+    let pre112Insertion = '';
+    let 句目錄級 = dialectInfo.目錄級;
+    let mediaNo = ''; // 在迴圈內計算
 
-      // 編號處理
-      var no = line.編號.split('-');
-      if (no[0] <= 9) {
-        no[0] = '0' + no[0];
-      }
-      if (dialectInfo.級 === '初') {
-        no[0] = '0' + no[0];
-      } // 初級特殊處理
-      if (no[1] <= 9) {
-        no[1] = '0' + no[1];
-      }
-      if (no[1] <= 99) {
-        no[1] = '0' + no[1];
-      }
-      mediaNo = no[1]; // mediaNo 在此賦值
-
-      // 例外音檔處理
-      const index = dialectInfo.例外音檔.findIndex(
-        ([編號]) => 編號 === line.編號
-      );
-      if (index !== -1) {
-        const matchedElement = dialectInfo.例外音檔[index];
-        console.log(`編號 ${line.編號} 符合例外音檔`);
-        mediaYr = matchedElement[1];
-        mediaNo = matchedElement[2]; // 例外 mediaNo 在此賦值
-        pre112Insertion = 's/';
-        句目錄級 = dialectInfo.目錄另級;
-      }
-
-      const 詞目錄 =
-        dialectInfo.目錄級 +
-        '/' +
-        dialectInfo.檔腔 +
-        '/' +
-        dialectInfo.檔級 +
-        dialectInfo.檔腔;
-      const 句目錄 =
-        句目錄級 +
-        '/' +
-        dialectInfo.檔腔 +
-        '/' +
-        pre112Insertion +
-        dialectInfo.檔級 +
-        dialectInfo.檔腔;
-
-      let audioIndex = rowIndex * 2;
-      rowIndex++;
-      var item = document.createElement('tr');
-
-      // TD1: 編號 & 控制按鈕
-      const td1 = document.createElement('td');
-      td1.className = 'no';
-      td1.dataset.label = '編號'; // <-- 加入 data-label
-      const anchor = document.createElement('a');
-      anchor.name = no[1]; // 使用 '001', '002' 等格式
-      td1.appendChild(anchor);
-      const noText = document.createTextNode(line.編號 + '\u00A0');
-      td1.appendChild(noText);
-
-      const bookmarkBtn = document.createElement('button');
-      bookmarkBtn.className = 'bookmarkBtn';
-      bookmarkBtn.dataset.rowId = no[1]; // data-row-id 仍用 '001'
-      bookmarkBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
-      td1.appendChild(bookmarkBtn);
-      bookmarkButtonsList.push(bookmarkBtn); // 收集按鈕
-
-      const playBtn = document.createElement('button');
-      playBtn.className = 'playFromThisRow';
-      playBtn.dataset.index = audioIndex; // 播放索引
-      playBtn.dataset.rowId = no[1]; // 加入 rowId 方便查找
-      playBtn.title = '從此列播放';
-      playBtn.innerHTML = '<i class="fas fa-play"></i>';
-      td1.appendChild(playBtn);
-      item.appendChild(td1);
-
-      // TD2: 詞彙、標音、音檔、意義、備註
-      const td2 = document.createElement('td');
-      td2.dataset.label = '詞彙'; // <-- 加入 data-label
-      const ruby = document.createElement('ruby');
-      ruby.textContent = line.客家語;
-      const rt = document.createElement('rt');
-      rt.textContent = line.客語標音;
-      ruby.appendChild(rt);
-      td2.appendChild(ruby);
-      td2.appendChild(document.createElement('br'));
-      const audio1 = document.createElement('audio');
-      audio1.className = 'media';
-      audio1.controls = true;
-      audio1.preload = 'none';
-      const source1 = document.createElement('source');
-      // *** 注意路徑組合 ***
-      source1.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${dialectInfo.generalMediaYr}/${詞目錄}-${no[0]}-${no[1]}.mp3`;
-      source1.type = 'audio/mpeg';
-      audio1.appendChild(source1);
-      td2.appendChild(audio1);
-      audioElementsList.push(audio1); // 收集音檔
-      td2.appendChild(document.createElement('br'));
-      const meaningText = document.createTextNode(
-        line.華語詞義.replace(/"/g, '')
-      );
-      td2.appendChild(meaningText);
-      if (line.備註 && line.備註.trim() !== '') {
-        const notesP = document.createElement('p');
-        notesP.className = 'notes';
-        notesP.textContent = `（${line.備註}）`;
-        td2.appendChild(notesP);
-      } // 不需要 else 隱藏的 p
-      item.appendChild(td2);
-
-      // TD3: 例句、音檔、翻譯
-      const td3 = document.createElement('td');
-      td3.dataset.label = '例句'; // <-- 加入 data-label
-      if (line.例句 && line.例句.trim() !== '') {
-        const sentenceSpan = document.createElement('span');
-        sentenceSpan.className = 'sentence';
-        sentenceSpan.innerHTML = line.例句
-          .replace(/"/g, '')
-          .replace(/\\n/g, '<br>');
-        td3.appendChild(sentenceSpan);
-        td3.appendChild(document.createElement('br'));
-        const audio2 = document.createElement('audio');
-        audio2.className = 'media';
-        audio2.controls = true;
-        audio2.preload = 'none';
-        const source2 = document.createElement('source');
-        // *** 注意路徑組合 ***
-        source2.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${句目錄}-${no[0]}-${mediaNo}s.mp3`;
-        source2.type = 'audio/mpeg';
-        audio2.appendChild(source2);
-        td3.appendChild(audio2);
-        audioElementsList.push(audio2); // 收集音檔
-        td3.appendChild(document.createElement('br'));
-        const translationText = document.createElement('span');
-        translationText.innerHTML = line.翻譯
-          .replace(/"/g, '')
-          .replace(/\\n/g, '<br>');
-        td3.appendChild(translationText);
-      } else {
-        // 加入 skip 的 audio
-        const audio3 = document.createElement('audio');
-        audio3.className = 'media';
-        audio3.dataset.skip = 'true';
-        audio3.controls = false; // 可以設為 false 因為是隱藏的
-        audio3.preload = 'none';
-        audio3.style.display = 'none'; // 確保隱藏
-        // source 可以不加或加一個無效 src
-        td3.appendChild(audio3);
-        audioElementsList.push(audio3); // 仍然收集，以保持索引一致
-      }
-      item.appendChild(td3);
-
-      table.appendChild(item);
-
-      // 例外音檔處理結束的相關復位 (這部分似乎不需要了，因為變數在迴圈開始時重置)
-      // pre112Insertion = "";
-      // mediaYr = dialectInfo.generalMediaYr;
-      // 句目錄級 = dialectInfo.目錄級;
-    } else {
-      continue;
+    // 編號處理
+    var no = line.編號.split('-');
+    if (no[0] <= 9) {
+      no[0] = '0' + no[0];
     }
+    if (dialectInfo.級 === '初') {
+      no[0] = '0' + no[0];
+    } // 初級特殊處理
+    if (no[1] <= 9) {
+      no[1] = '0' + no[1];
+    }
+    if (no[1] <= 99) {
+      no[1] = '0' + no[1];
+    }
+    mediaNo = no[1]; // mediaNo 在此賦值
+
+    // 例外音檔處理
+    const index = dialectInfo.例外音檔.findIndex(
+      ([編號]) => 編號 === line.編號
+    );
+    if (index !== -1) {
+      const matchedElement = dialectInfo.例外音檔[index];
+      console.log(`編號 ${line.編號} 符合例外音檔`);
+      mediaYr = matchedElement[1];
+      mediaNo = matchedElement[2]; // 例外 mediaNo 在此賦值
+      pre112Insertion = 's/';
+      句目錄級 = dialectInfo.目錄另級;
+    }
+
+    const 詞目錄 =
+      dialectInfo.目錄級 +
+      '/' +
+      dialectInfo.檔腔 +
+      '/' +
+      dialectInfo.檔級 +
+      dialectInfo.檔腔;
+    const 句目錄 =
+      句目錄級 +
+      '/' +
+      dialectInfo.檔腔 +
+      '/' +
+      pre112Insertion +
+      dialectInfo.檔級 +
+      dialectInfo.檔腔;
+
+    let audioIndex = rowIndex * 2;
+    rowIndex++;
+    var item = document.createElement('tr');
+
+    // TD1: 編號 & 控制按鈕
+    const td1 = document.createElement('td');
+    td1.className = 'no';
+    td1.dataset.label = '編號'; // <-- 加入 data-label
+    const anchor = document.createElement('a');
+    anchor.name = no[1]; // 使用 '001', '002' 等格式
+    td1.appendChild(anchor);
+    const noText = document.createTextNode(line.編號 + '\u00A0');
+    td1.appendChild(noText);
+
+    const bookmarkBtn = document.createElement('button');
+    bookmarkBtn.className = 'bookmarkBtn';
+    bookmarkBtn.dataset.rowId = no[1]; // data-row-id 仍用 '001'
+    bookmarkBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+    td1.appendChild(bookmarkBtn);
+    bookmarkButtonsList.push(bookmarkBtn); // 收集按鈕
+
+    const playBtn = document.createElement('button');
+    playBtn.className = 'playFromThisRow';
+    playBtn.dataset.index = audioIndex; // 播放索引
+    playBtn.dataset.rowId = no[1]; // 加入 rowId 方便查找
+    playBtn.title = '從此列播放';
+    playBtn.innerHTML = '<i class="fas fa-play"></i>';
+    td1.appendChild(playBtn);
+    item.appendChild(td1);
+
+    // TD2: 詞彙、標音、音檔、意義、備註
+    const td2 = document.createElement('td');
+    td2.dataset.label = '詞彙'; // <-- 加入 data-label
+    const ruby = document.createElement('ruby');
+    ruby.textContent = line.客家語;
+    const rt = document.createElement('rt');
+    rt.textContent = line.客語標音;
+    ruby.appendChild(rt);
+    td2.appendChild(ruby);
+    td2.appendChild(document.createElement('br'));
+    const audio1 = document.createElement('audio');
+    audio1.className = 'media';
+    audio1.controls = true;
+    audio1.preload = 'none';
+    const source1 = document.createElement('source');
+    // *** 注意路徑組合 ***
+    source1.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${dialectInfo.generalMediaYr}/${詞目錄}-${no[0]}-${no[1]}.mp3`;
+    source1.type = 'audio/mpeg';
+    audio1.appendChild(source1);
+    td2.appendChild(audio1);
+    audioElementsList.push(audio1); // 收集音檔
+    td2.appendChild(document.createElement('br'));
+    const meaningText = document.createTextNode(
+      line.華語詞義.replace(/"/g, '')
+    );
+    td2.appendChild(meaningText);
+    if (line.備註 && line.備註.trim() !== '') {
+      const notesP = document.createElement('p');
+      notesP.className = 'notes';
+      notesP.textContent = `（${line.備註}）`;
+      td2.appendChild(notesP);
+    } // 不需要 else 隱藏的 p
+    item.appendChild(td2);
+
+    // TD3: 例句、音檔、翻譯
+    const td3 = document.createElement('td');
+    td3.dataset.label = '例句'; // <-- 加入 data-label
+    if (line.例句 && line.例句.trim() !== '') {
+      const sentenceSpan = document.createElement('span');
+      sentenceSpan.className = 'sentence';
+      sentenceSpan.innerHTML = line.例句
+        .replace(/"/g, '')
+        .replace(/\n/g, '<br>');
+      td3.appendChild(sentenceSpan);
+      td3.appendChild(document.createElement('br'));
+      const audio2 = document.createElement('audio');
+      audio2.className = 'media';
+      audio2.controls = true;
+      audio2.preload = 'none';
+      const source2 = document.createElement('source');
+      // *** 注意路徑組合 ***
+      source2.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${句目錄}-${no[0]}-${mediaNo}s.mp3`;
+      source2.type = 'audio/mpeg';
+      audio2.appendChild(source2);
+      td3.appendChild(audio2);
+      audioElementsList.push(audio2); // 收集音檔
+      td3.appendChild(document.createElement('br'));
+      const translationText = document.createElement('span');
+      translationText.innerHTML = line.翻譯
+        .replace(/"/g, '')
+        .replace(/\n/g, '<br>');
+      td3.appendChild(translationText);
+    } else {
+      // 加入 skip 的 audio
+      const audio3 = document.createElement('audio');
+      audio3.className = 'media';
+      audio3.dataset.skip = 'true';
+      audio3.controls = false; // 可以設為 false 因為是隱藏的
+      audio3.preload = 'none';
+      audio3.style.display = 'none'; // 確保隱藏
+      // source 可以不加或加一個無效 src
+      td3.appendChild(audio3);
+      audioElementsList.push(audio3); // 仍然收集，以保持索引一致
+    }
+    item.appendChild(td3);
+
+    table.appendChild(item);
   } // --- for loop 結束 ---
 
   table.setAttribute('width', '100%');
@@ -584,12 +666,6 @@ function buildTableAndSetupPlayback(
   // --- 將原本在 generate 內部 radio change listener 中的播放/書籤設定邏輯搬移至此 ---
   // --- 並將其包裝以便重複使用和觸發 ---
 
-  // 先定義播放相關的狀態變數 (移到更外層，或作為某個物件的屬性，以保持狀態)
-  // 為了簡單起見，暫時放在 buildTableAndSetupPlayback 內部，但注意這意味著每次切換分類狀態會重置
-  // let currentAudioIndex = 0; // 移到全域
-  // let isPlaying = false; // 移到全域
-  // let isPaused = false; // 移到全域
-  // let currentAudio = null; // 移到全域
   const audioElements = audioElementsList; // 使用收集到的元素 (保持局部，因為每個類別不同)
   const bookmarkButtons = bookmarkButtonsList; // 使用收集到的按鈕 (保持局部)
 
@@ -628,6 +704,10 @@ function buildTableAndSetupPlayback(
     });
     removeNowPlaying();
     isCrossCategoryPlaying = false; // 確保標記被重設
+    // --- 新增：播放結束時也清除書籤暫存 ---
+    finishedTableName = null;
+    finishedCat = null;
+    // --- 新增結束 ---
   }
   // --- 抽離結束 ---
 
@@ -944,6 +1024,10 @@ function buildTableAndSetupPlayback(
           element.classList.add('playable');
         });
         removeNowPlaying();
+        // --- 新增：手動停止時也清除書籤暫存 ---
+        finishedTableName = null;
+        finishedCat = null;
+        // --- 新增結束 ---
       }
     };
   } else {
@@ -971,6 +1055,10 @@ function buildTableAndSetupPlayback(
   // 抽離出的啟動播放邏輯
   function startPlayingFromRow(buttonElement) {
     isCrossCategoryPlaying = false; // User initiated playback, disable cross-category mode
+    // --- 新增：手動開始播放時清除書籤暫存 ---
+    finishedTableName = null;
+    finishedCat = null;
+    // --- 新增結束 ---
     currentAudioIndex = parseInt(buttonElement.dataset.index);
     console.log('Starting playback from index:', currentAudioIndex); // 增加日誌
     isPlaying = true;
@@ -1107,10 +1195,11 @@ function buildTableAndSetupPlayback(
     }
   } else {
     // --- 如果不是自動播放 (例如只是切換分類)，清除進度詳情 ---
-    if (progressDetailsSpan) {
+    // --- *** 修改：只有在非跨類別播放時才清除詳情 *** ---
+    if (!isCrossCategoryPlaying && progressDetailsSpan) {
       progressDetailsSpan.textContent = ''; // 清除文字
     }
-    // --- 結束 ---
+    // --- *** 修改結束 *** ---
 
     // --- 新增：處理跨類別連續播放 ---
     if (isCrossCategoryPlaying) {
@@ -1163,6 +1252,8 @@ function buildTableAndSetupPlayback(
         console.warn(
           'Could not find the first play button for cross-category playback.'
         );
+        // 如果找不到第一個按鈕（理論上不該發生，因為已檢查 filteredItems.length > 0），停止播放
+        playEndOfPlayback();
       }
       // isCrossCategoryPlaying = false; // 不在這裡重設，在 playEndOfPlayback 或 startPlayingFromRow 重設
     }
@@ -1171,8 +1262,8 @@ function buildTableAndSetupPlayback(
     // --- 新增：在 Firefox 中調整 Ruby 字體大小 ---
     adjustAllRubyFontSizes(contentContainer);
     // --- 新增結束 ---
-  } // --- buildTableAndSetupPlayback 函式結束 ---
-} // <-- 添加遺漏的大括號
+  } // --- autoPlayTargetRowId 處理結束 ---
+} // --- buildTableAndSetupPlayback 函式結束 ---
 
 /* 最頂端一開始讀取進度 */
 document.addEventListener('DOMContentLoaded', function () {
