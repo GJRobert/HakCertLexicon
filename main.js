@@ -347,6 +347,9 @@ function generate(content, initialCategory = null, targetRowId = null) {
     // **新增這行**：移除 header 中的播放控制鈕
     header?.querySelector('#audioControls')?.remove(); // 使用 Optional Chaining 避免錯誤
   }
+
+  // --- 在函式最尾項 ---
+  setTimeout(adjustHeaderFontSizeOnOverflow, 0);
 } // --- generate 函式結束 ---
 
 // --- 新增：建立表格和設定播放/書籤功能的主體函式 ---
@@ -808,20 +811,20 @@ function buildTableAndSetupPlayback(
           addNowPlaying(rowElement); // 樣式還係加在 tr 項
         }
 
-        if (audioTd) { // <--- 改成檢查 audioTd
+        if (audioTd) {
+          // <--- 改成檢查 audioTd
           console.log('Scrolling to audio TD:', audioTd); // 加 log 方便除錯
           // 對尋到个 td 執行 scrollIntoView
           audioTd.scrollIntoView({
             behavior: 'smooth',
-            block: 'center',   // 試看啊用 'center' 或者 'nearest'
-            inline: 'nearest' // 確保水平方向也盡量滾入畫面
+            block: 'center', // 試看啊用 'center' 或者 'nearest'
+            inline: 'nearest', // 確保水平方向也盡量滾入畫面
           });
         } else if (rowElement) {
           // 萬一尋無 td (理論上毋會)，退回捲動 tr
           console.warn('Could not find audio TD, falling back to scroll TR.');
           rowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-
       })
       .catch((error) => {
         console.error(
@@ -1283,6 +1286,9 @@ function buildTableAndSetupPlayback(
     adjustAllRubyFontSizes(contentContainer);
     // --- 新增結束 ---
   } // --- autoPlayTargetRowId 處理結束 ---
+
+  // --- 在函式最尾項，確保 DOM 都更新後 ---
+  setTimeout(adjustHeaderFontSizeOnOverflow, 0); // 使用 setTimeout
 } // --- buildTableAndSetupPlayback 函式結束 ---
 
 /* 最頂端一開始讀取進度 */
@@ -1363,6 +1369,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
   updateProgressDropdown();
+
+  // --- 新增：在解析 URL 參數或設定初始狀態後，呼叫一次調整函式 ---
+  // (放在處理 URL 參數邏輯的最後面，或是在 if/else 區塊確保執行到)
+  setTimeout(adjustHeaderFontSizeOnOverflow, 0); // 使用 setTimeout 確保在 DOM 繪製後執行
 
   // 當捲動超過一定距離時顯示按鈕
   window.onscroll = function () {
@@ -1712,6 +1722,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // 確保下拉選單選在預設值
     if (progressDropdown) progressDropdown.selectedIndex = 0;
   }
+
+  // --- 再加一次確保，特別是如果 URL 參數處理是異步的 ---
+  // 或者直接放在最尾項
+  setTimeout(adjustHeaderFontSizeOnOverflow, 50); // 稍微延遲
 });
 
 /* 標示大埔變調 */
@@ -1953,9 +1967,11 @@ function updateProgressDropdown() {
     // 如果之前沒有選擇，或是選的是預設值，保持預設值被選中
     progressDropdown.selectedIndex = 0;
   }
-  // --- 新增結束 ---
+
+  // --- 在所有 option 都加入，並且可能恢復選中狀態後 ---
+  // 使用 setTimeout 確保 DOM 更新完成
+  setTimeout(adjustHeaderFontSizeOnOverflow, 0);
 }
-/* --- 新增結束 --- */
 
 /* --- 新增開始：將表格名稱映射回資料變數名稱 --- */
 function mapTableNameToDataVar(tableName) {
@@ -2205,6 +2221,10 @@ function handleResizeActions() {
       'Resize handler: Could not find #generated container for font adjustment.'
     );
   }
+
+  // *** 在這裡加入呼叫 ***
+  adjustHeaderFontSizeOnOverflow();
+
   // 淨在 #nowPlaying 存在个時節正捲動
   const activeRow = document.getElementById('nowPlaying');
   if (activeRow) {
@@ -2227,7 +2247,10 @@ function handleResizeActions() {
 function scrollToNowPlayingElement() {
   // 先尋著有 'nowPlaying' ID 个 tr
   const activeRow = document.getElementById('nowPlaying');
-  console.log('scrollToNowPlayingElement called. Found #nowPlaying TR:', activeRow);
+  console.log(
+    'scrollToNowPlayingElement called. Found #nowPlaying TR:',
+    activeRow
+  );
 
   // 確定 activeRow 同 currentAudio (目前播放或暫停个音檔) 都存在
   if (activeRow && currentAudio) {
@@ -2239,19 +2262,22 @@ function scrollToNowPlayingElement() {
       console.log('Scrolling to audio TD within #nowPlaying TR:', audioTd);
       audioTd.scrollIntoView({
         behavior: 'smooth', // 在 resize 時節用 smooth 可能較好
-        block: 'center',   // 'nearest' 在 resize 時較毋會跳恁大力
-        inline: 'nearest'
+        block: 'center', // 'nearest' 在 resize 時較毋會跳恁大力
+        inline: 'nearest',
       });
     } else {
-      console.warn('scrollToNowPlayingElement: Could not find audio TD or it is not within #nowPlaying TR. Falling back to scroll TR.');
+      console.warn(
+        'scrollToNowPlayingElement: Could not find audio TD or it is not within #nowPlaying TR. Falling back to scroll TR.'
+      );
       // 萬一尋無正確个 td，退回捲動歸列 tr
       activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   } else {
-    console.log('scrollToNowPlayingElement: #nowPlaying TR or currentAudio reference not found. Skipping scroll.');
+    console.log(
+      'scrollToNowPlayingElement: #nowPlaying TR or currentAudio reference not found. Skipping scroll.'
+    );
   }
 }
-
 
 // 監聽 window 的 resize 事件，並使用 debounce 處理
 // 這裡設定 250 毫秒，表示停止調整大小 250ms 後才執行捲動和字體調整
@@ -2351,4 +2377,158 @@ function adjustAllRubyFontSizes(containerElement) {
     rubyElement.style.fontSize = '';
     adjustRubyFontSize(rubyElement);
   });
+}
+
+/**
+ * 動態調整 #header 內主要元素 (#progressDropdown, #progressDetails) 的字體大小，
+ * 檢查 #header 是否發生橫向溢出 (overflow)，如果是，則縮小字體。
+ */
+function adjustHeaderFontSizeOnOverflow() { // <--- 改名仔
+    console.log('--- adjustHeaderFontSizeOnOverflow function CALLED ---');
+    const header = document.getElementById('header');
+    const dropdown = document.getElementById('progressDropdown');
+    const detailsContainer = document.getElementById('progressDetails'); // <span>
+    // 注意：linkElement 還是需要，因為 detailsContainer 本身可能沒有文字
+    const linkElement = detailsContainer?.querySelector('a'); // <a>
+
+    // 確保主要元素都存在
+    if (!header || !dropdown || !detailsContainer || !linkElement) {
+        console.warn('adjustHeaderFontSizeOnOverflow: Missing required elements (header, dropdown, detailsContainer, or linkElement).');
+        // 如果缺少元素，嘗試重設可能存在的行內樣式
+        [dropdown, linkElement].forEach(el => {
+            if (el && el.style.fontSize !== '') {
+                el.style.fontSize = '';
+            }
+        });
+        return;
+    }
+
+    // --- 記錄目標元素的初始字體大小 ---
+    const elementsToResize = [
+        { element: dropdown, minSize: 10 }, // 下拉選單最小字體 (可調整)
+        { element: linkElement, minSize: 8 }   // 連結最小字體 (可調整)
+    ];
+    const initialStyles = elementsToResize.map(item => ({
+        element: item.element,
+        initialSize: parseFloat(window.getComputedStyle(item.element).fontSize),
+        minSize: item.minSize
+    }));
+
+    // --- 重設行內樣式，以便計算自然寬度 ---
+    initialStyles.forEach(item => {
+        item.element.style.fontSize = '';
+    });
+    // 強制瀏覽器重繪
+    header.offsetHeight;
+
+    // --- 計算 Header 可用寬度與初始需求寬度 ---
+    const headerWidth = header.clientWidth;
+    let totalRequiredWidth = calculateTotalRequiredWidth(header); // 使用輔助函式
+    const gapValue = parseFloat(window.getComputedStyle(header).gap) || 0; // 讀取 gap
+
+    console.log(`Header Width: ${headerWidth}, Initial Required Width: ${totalRequiredWidth}, Gap: ${gapValue}`);
+
+    // --- 檢查是否溢出 ---
+    const isOverflowing = totalRequiredWidth > headerWidth;
+    const buffer = 1; // 允許一點點誤差
+
+    if (isOverflowing && totalRequiredWidth - headerWidth > buffer) {
+        console.log(`#header is overflowing by ${totalRequiredWidth - headerWidth}px. Shrinking fonts.`);
+        // --- 已溢出，執行縮小字體邏輯 ---
+
+        // 確保連結文字不換行 (CSS 應該已處理，但 JS 加強)
+        linkElement.style.whiteSpace = 'nowrap';
+
+        // --- 逐步縮小字體 ---
+        let canShrinkMore = true; // 標記是否還能繼續縮小
+        for (let i = 0; i < 50 && totalRequiredWidth > headerWidth && canShrinkMore; i++) {
+            canShrinkMore = false; // 假設這次不能再縮了
+            let currentTotalWidthBeforeShrink = totalRequiredWidth; // 記錄縮小前的寬度
+
+            // 對每個目標元素縮小 1px (如果還沒到最小值)
+            initialStyles.forEach(item => {
+                let currentElementSize = parseFloat(item.element.style.fontSize || item.initialSize);
+                if (currentElementSize > item.minSize) {
+                    currentElementSize -= 1;
+                    item.element.style.fontSize = `${currentElementSize}px`;
+                    canShrinkMore = true; // 只要有一個能縮，就標記為 true
+                } else {
+                    // 確保最小值被應用
+                    item.element.style.fontSize = `${item.minSize}px`;
+                }
+            });
+
+            // 如果沒有任何元素可以再縮小了，就跳出循環
+            if (!canShrinkMore) {
+                 console.log('All elements reached minimum font size.');
+                 break;
+            }
+
+            // 強制重繪
+            header.offsetHeight;
+
+            // *** 重新計算 totalRequiredWidth ***
+            totalRequiredWidth = calculateTotalRequiredWidth(header);
+            console.log(`  Shrunk step ${i+1}, new required width: ${totalRequiredWidth}`);
+
+            // *** 增加檢查：如果寬度沒有變小，可能卡住了，跳出 ***
+            if (totalRequiredWidth >= currentTotalWidthBeforeShrink && canShrinkMore) {
+                console.warn('  Width did not decrease after shrinking, breaking loop to prevent infinite loop.');
+                break;
+            }
+        } // --- 縮小循環結束 ---
+
+        // 循環結束後最後檢查
+        if (totalRequiredWidth > headerWidth) {
+             console.warn(`Fonts shrunk to minimum, but header might still overflow by ${totalRequiredWidth - headerWidth}px.`);
+        } else {
+             console.log(`Font sizes adjusted. Final required width: ${totalRequiredWidth}`);
+        }
+
+    } else {
+        // --- 未溢出或溢出在 buffer 內 ---
+        // console.log('#header is not overflowing significantly. Resetting fonts if needed.');
+        let stylesReset = false;
+        initialStyles.forEach(item => {
+            if (item.element.style.fontSize !== '') {
+                item.element.style.fontSize = '';
+                stylesReset = true;
+            }
+        });
+         // 恢復連結的 white-space (如果之前被 JS 修改過)
+        if (linkElement.style.whiteSpace !== '') {
+             linkElement.style.whiteSpace = '';
+             stylesReset = true;
+        }
+        if (stylesReset) {
+            console.log('Reset font sizes to default.');
+        }
+    }
+}
+
+/**
+ * 輔助函式：計算 Header 內部可見子元素的總需求寬度 (包含 gap)
+ * @param {HTMLElement} headerElement - #header 元素
+ * @returns {number} 總需求寬度 (px)
+ */
+function calculateTotalRequiredWidth(headerElement) {
+    const children = headerElement.children;
+    let totalWidth = 0;
+    const computedHeaderStyle = window.getComputedStyle(headerElement);
+    const gapValue = parseFloat(computedHeaderStyle.gap) || 0;
+    let visibleChildrenCount = 0;
+
+    for (const child of children) {
+        // 確保只計算實際顯示的元素
+        if (child.offsetParent !== null && window.getComputedStyle(child).display !== 'none') {
+            totalWidth += child.scrollWidth;
+            visibleChildrenCount++;
+        }
+    }
+
+    // 只有在超過一個可見元素時才加上 gap
+    if (visibleChildrenCount > 1) {
+        totalWidth += (visibleChildrenCount - 1) * gapValue;
+    }
+    return totalWidth;
 }

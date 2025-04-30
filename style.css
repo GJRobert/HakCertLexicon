@@ -234,7 +234,7 @@ audio {
 }
 #audioControls button {
   border: none;
-  font-size: clamp(18px, 2vw, 30px);
+  font-size: clamp(10px, 2vw, 30px);
   /* margin: 0 5px;*/
   background: none;
   padding: 0;
@@ -359,6 +359,7 @@ tr#nowPlaying.paused-playback {
   a {
     color: wheat;
     font-family: var(--title-font);
+    white-space: nowrap;
   }
 }
 
