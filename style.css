@@ -234,7 +234,7 @@ audio {
 }
 #audioControls button {
   border: none;
-  font-size: clamp(10px, 2vw, 30px);
+  font-size: clamp(15px, 2vw, 30px);
   /* margin: 0 5px;*/
   background: none;
   padding: 0;
@@ -353,7 +353,7 @@ tr#nowPlaying.paused-playback {
   font-size: clamp(18px, 1.5vw, 30px); /* 稍微小一點的字 */
   color: #555; /* 設定顏色 */
   vertical-align: middle; /* 垂直對齊 */
-  margin-left: 8px; /* 和下拉選單間隔 */
+  /*margin-left: 8px; /* 和下拉選單間隔 */
   flex-shrink: 1; /* 允許被壓縮 */
 
   a {

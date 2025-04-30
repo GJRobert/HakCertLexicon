@@ -1154,8 +1154,8 @@ function buildTableAndSetupPlayback(
 
             // 決定連結文字
             const linkText = loadedBookmark
-              ? `第 ${loadedBookmark.rowId} 行 (${loadedBookmark.percentage}%)`
-              : `第 ${autoPlayTargetRowId} 行`;
+              ? `#${loadedBookmark.rowId} (${loadedBookmark.percentage}%)`
+              : `#${autoPlayTargetRowId}`;
 
             // 建立連結元素
             const linkElement = document.createElement('a');
@@ -1174,8 +1174,8 @@ function buildTableAndSetupPlayback(
           } else {
             // 如果無法產生連結，只顯示文字 (備用情況)
             const textContent = loadedBookmark
-              ? `第 ${loadedBookmark.rowId} 行 (${loadedBookmark.percentage}%)`
-              : `第 ${autoPlayTargetRowId} 行`;
+              ? `#${loadedBookmark.rowId} (${loadedBookmark.percentage}%)`
+              : `#${autoPlayTargetRowId}`;
             progressDetailsSpan.textContent = textContent;
             console.error(
               '無法從 tableName 解析腔調和級別代碼:',
@@ -1451,7 +1451,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const linkElement = document.createElement('a');
                 linkElement.href = shareURL;
-                linkElement.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+                linkElement.textContent = `${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`;
                 // linkElement.target = '_blank';
                 // linkElement.rel = 'noopener noreferrer';
                 linkElement.style.marginLeft = '5px';
@@ -1462,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   'Progress details updated with shareable link from dropdown.'
                 );
               } else {
-                progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`; // Fallback text
+                progressDetailsSpan.textContent = `${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`; // Fallback text
                 console.error(
                   '無法從 tableName 解析腔調和級別代碼:',
                   targetTableName
@@ -1931,7 +1931,7 @@ function updateProgressDropdown() {
     // 格式化顯示文字
     option.textContent = `${index + 1}. ${bookmark.tableName} - ${
       bookmark.cat
-    } - 第 ${bookmark.rowId} 行 (${bookmark.percentage}%)`;
+    } - #${bookmark.rowId} (${bookmark.percentage}%)`;
     // 可以設定 value 屬性，方便未來擴充點選跳轉功能
     // option.value = JSON.stringify(bookmark);
     option.value = bookmark.tableName + '||' + bookmark.cat; // 用 tableName 和 cat 組合，' || ' 當分隔符
@@ -1955,7 +1955,7 @@ function updateProgressDropdown() {
         (bm) => bm.tableName + '||' + bm.cat === previousValue
       );
       if (selectedBookmark && progressDetailsSpan) {
-        progressDetailsSpan.textContent = `第 ${selectedBookmark.rowId} 行 (${selectedBookmark.percentage}%)`;
+        progressDetailsSpan.textContent = `${selectedBookmark.rowId} (${selectedBookmark.percentage}%)`;
       }
       // --- 修改結束 ---
     } else {
@@ -2156,7 +2156,7 @@ function saveBookmark(rowId, percentage, category, tableName) {
         // 建立連結元素
         const linkElement = document.createElement('a');
         linkElement.href = shareURL;
-        linkElement.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
+        linkElement.textContent = `${newBookmark.rowId} (${newBookmark.percentage}%)`;
         // linkElement.target = '_blank'; // 可選：在新分頁開啟
         // linkElement.rel = 'noopener noreferrer'; // 安全性考量
         linkElement.style.marginLeft = '5px'; // 加點間距
@@ -2167,7 +2167,7 @@ function saveBookmark(rowId, percentage, category, tableName) {
         console.log('Progress details updated with shareable link.');
       } else {
         // 如果無法產生連結，只顯示文字
-        progressDetailsSpan.textContent = `第 ${newBookmark.rowId} 行 (${newBookmark.percentage}%)`;
+        progressDetailsSpan.textContent = `${newBookmark.rowId} (${newBookmark.percentage}%)`;
         console.error('無法從 tableName 解析腔調和級別代碼:', tableName);
       }
     } else {
