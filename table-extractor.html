@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>客語認證詞彙 CSV 提取工具</title>
+    <title>客話認證詞彙 CSV 產生工具</title>
     <link rel="stylesheet" href="style.css" />
     <link href="https://tauhu.tw/tauhu-oo.css" rel="stylesheet" />
 
@@ -67,12 +67,12 @@
     </style>
 </head>
 <body>
-    <h2>客語認證詞彙 CSV 提取工具</h2>
+    <h2>客話認證詞彙 CSV 產生工具</h2>
 
     <div>
         <label for="dialectSelect">腔調：</label>
         <select id="dialectSelect">
-            <option value="">-- 請選擇腔調 --</option>
+            <option value="">-- 請擇腔調 --</option>
             <option value="四">四縣</option>
             <option value="海">海陸</option>
             <option value="大">大埔</option>
@@ -82,7 +82,7 @@
 
         <label for="levelSelect">級別：</label>
         <select id="levelSelect">
-            <option value="">-- 請先選擇腔調 --</option>
+            <option value="">-- 請先擇腔調 --</option>
             <!-- 級別選項會用 JavaScript 動態產生 -->
         </select>
 
@@ -91,7 +91,7 @@
         <button id="exportAllZipBtn">輸出所有 CSV (ZIP)</button> <!-- 新增按鈕 -->
     </div>
 
-    <div id="status">請選擇腔調與級別，點擊「載入資料」後輸出單一 CSV；或直接點擊「輸出所有 CSV (ZIP)」。</div> <!-- 修改提示文字 -->
+    <div id="status">請擇腔調同級別，點「載入資料」後輸出單一 CSV；還係直接點「輸出所有 CSV (ZIP)」。</div> <!-- 修改提示文字 -->
 
     <script>
         // JavaScript 邏輯會加在這搭仔
@@ -99,6 +99,7 @@
         const levelSelect = document.getElementById('levelSelect');
         const loadDataBtn = document.getElementById('loadDataBtn');
         const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const exportAllZipBtn = document.getElementById('exportAllZipBtn'); // 新增：取得新按鈕參照
         const statusDiv = document.getElementById('status');
 
         let loadedData = null; // 用來儲存載入个資料陣列
@@ -223,7 +224,7 @@
                 // 組合檔案名稱
                 const dialectName = dialectSelect.options[dialectSelect.selectedIndex].text;
                 const levelName = levelSelect.options[levelSelect.selectedIndex].text;
-                const filename = `客話詞彙-${dialectName}-${levelName}.csv`;
+                const filename = `（愛灣語處理）客話詞彙-${dialectName}-${levelName}.csv`;
 
                 link.setAttribute("download", filename);
                 link.style.visibility = 'hidden';
@@ -408,6 +409,127 @@
                 }).join(',')
             ).join('\n');
         }
+
+        // --- 新增：處理輸出所有 CSV (ZIP) ---
+        exportAllZipBtn.addEventListener('click', async function() { // 改用 async 函式
+            statusDiv.textContent = '開始處理所有詞彙資料並打包成 ZIP... 請稍候...';
+            this.disabled = true; // 處理中禁用按鈕
+            loadDataBtn.disabled = true;
+            exportCsvBtn.disabled = true;
+            dialectSelect.disabled = true;
+            levelSelect.disabled = true;
+
+            const zip = new JSZip();
+            let errorOccurred = false;
+            let filesAdded = 0;
+
+            // 組合所有腔調級別的變數名稱
+            const allDataObjectNames = [];
+            const dialectNameMapping = { "四": "四縣", "海": "海陸", "大": "大埔", "平": "饒平", "安": "詔安" };
+
+            for (const dialectCode in availableLevels) {
+                const dialectFullName = dialectNameMapping[dialectCode] || dialectCode;
+                availableLevels[dialectCode].forEach(levelCode => {
+                    const levelFullName = levelNames[levelCode] || levelCode;
+                    allDataObjectNames.push({
+                        varName: dialectCode + levelCode, // e.g., 四基
+                        dialect: dialectFullName,       // e.g., 四縣
+                        level: levelFullName            // e.g., 基礎級
+                    });
+                });
+            }
+
+            console.log("準備處理的資料變數:", allDataObjectNames);
+
+            for (const item of allDataObjectNames) {
+                const dataObjectName = item.varName;
+                const dataObject = window[dataObjectName];
+
+                if (typeof dataObject === 'undefined') {
+                    console.warn(`警告：找不到資料變數 "${dataObjectName}"，跳過此檔案。`);
+                    continue; // 跳過不存在的資料
+                }
+
+                statusDiv.textContent = `正在處理 ${item.dialect}-${item.level}...`;
+                console.log(`Processing ${dataObjectName}...`);
+
+                try {
+                    // 1. 解析
+                    const rawDataArray = csvToArrayModified(dataObject.content);
+                    // 2. 處理 (含音檔連結)
+                    const processedData = processDataWithAudioLinks(rawDataArray, dataObject.name);
+                    // 3. 產生 CSV 字串
+                    const csvString = generateCsvString(processedData);
+                    // 4. 產生檔名
+                    const filename = `（愛灣語處理）客話詞彙-${item.dialect}-${item.level}.csv`;
+                    // 5. 加入 ZIP
+                    zip.file(filename, csvString);
+                    filesAdded++;
+                    console.log(`Added ${filename} to ZIP.`);
+
+                } catch (error) {
+                    console.error(`處理 "${dataObjectName}" 時發生錯誤:`, error);
+                    statusDiv.textContent = `處理 "${dataObjectName}" 時發生錯誤: ${error.message}。繼續處理下一個...`;
+                    errorOccurred = true;
+                    // 即使發生錯誤，也繼續處理下一個檔案
+                }
+                 // 短暫延遲避免瀏覽器卡頓 (可選)
+                 await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            if (filesAdded === 0 && errorOccurred) {
+                 statusDiv.textContent = '處理所有檔案時皆發生錯誤，無法產生 ZIP 檔案。';
+                 this.disabled = false; // 重新啟用按鈕
+                 loadDataBtn.disabled = false;
+                 dialectSelect.disabled = false;
+                 levelSelect.disabled = false;
+                 // exportCsvBtn 保持 disabled
+                 return;
+            } else if (filesAdded === 0) {
+                 statusDiv.textContent = '找不到任何有效的詞彙資料，無法產生 ZIP 檔案。';
+                 this.disabled = false; // 重新啟用按鈕
+                 loadDataBtn.disabled = false;
+                 dialectSelect.disabled = false;
+                 levelSelect.disabled = false;
+                 return;
+            }
+
+
+            statusDiv.textContent = `共 ${filesAdded} 個檔案處理完成，正在產生 ZIP 檔案...`;
+            console.log(`Generating ZIP file with ${filesAdded} entries...`);
+
+            try {
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(zipBlob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "（愛灣語處理）客話認證詞彙（全部）.zip");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                if (errorOccurred) {
+                    statusDiv.textContent = `ZIP 檔案 "（愛灣語處理）客話認證詞彙（全部）.zip" 已開始下載，但部分檔案處理失敗 (共 ${filesAdded} 個成功)。`;
+                } else {
+                    statusDiv.textContent = `ZIP 檔案 "（愛灣語處理）客話認證詞彙（全部）.zip" (共 ${filesAdded} 個檔案) 已開始下載。`;
+                }
+
+            } catch (error) {
+                console.error("產生或下載 ZIP 檔案時發生錯誤:", error);
+                statusDiv.textContent = `產生或下載 ZIP 檔案時發生錯誤: ${error.message}`;
+                errorOccurred = true; // 標記 ZIP 產生失敗
+            } finally {
+                // 無論成功或失敗，最後都要重新啟用按鈕
+                this.disabled = false;
+                loadDataBtn.disabled = false;
+                dialectSelect.disabled = false;
+                 levelSelect.disabled = false;
+                // exportCsvBtn 保持 disabled，因為沒有單獨載入資料
+                console.log("ZIP processing finished.");
+            }
+        });
+        // --- 新增結束 ---
 
     </script>
 
