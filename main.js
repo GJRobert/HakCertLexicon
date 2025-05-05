@@ -1053,9 +1053,9 @@ function buildTableAndSetupPlayback(
         });
         removeNowPlaying();
         // --- 新增：手動停止時也清除書籤暫存 ---
-        finishedTableName = null;
-        finishedCat = null;
         // --- 新增結束 ---
+        // Roo: 拿掉這兩行，因為跨類別播放時，stopButton.click() 會意外清除掉要傳遞給下一個 buildTableAndSetupPlayback 的資訊。
+        //      這些變數會在 buildTableAndSetupPlayback 內部使用後清除，或在 playEndOfPlayback/startPlayingFromRow 時清除。
       }
     };
   } else {
@@ -1280,6 +1280,10 @@ function buildTableAndSetupPlayback(
         );
         let bookmarks =
           JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+        // --- Debugging Log Start (Moved Before findIndex) ---
+        console.log('Bookmarks currently in localStorage:', JSON.stringify(bookmarks, null, 2)); // 印出所有書籤
+        console.log(`Searching for: tableName=[${finishedTableName}], cat=[${finishedCat}]`); // 印出搜尋目標
+        // --- Debugging Log End ---
         const previousBookmarkIndex = bookmarks.findIndex(
           (bm) => bm.tableName === finishedTableName && bm.cat === finishedCat
         );
