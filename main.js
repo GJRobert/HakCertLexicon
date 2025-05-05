@@ -383,6 +383,11 @@ function buildTableAndSetupPlayback(
     return; // 如果 header 不存在，後續操作無意義
   }
 
+  // --- 新增：在建立表格前，先移除可能殘留的 iOS 提示訊息 ---
+  const existingInstructions = document.querySelectorAll('.ios-autoplay-instruction');
+  existingInstructions.forEach(el => el.remove());
+  console.log('Removed existing iOS instruction messages.');
+
   const progressDetailsSpan = document.getElementById('progressDetails');
 
   console.log(
@@ -1184,29 +1189,70 @@ function buildTableAndSetupPlayback(
           }
         }
         // --- 修改結束 ---
+        
+        // --- *** iOS 自動播放處理修改 *** ---
+        const isRunningOnIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-        // 捲動到目標行 <-- Roo 移除此處捲動，讓 playAudio 統一處理
-        // targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (isRunningOnIOS && loadedViaUrlParams) { // 只在透過 URL 載入時才觸發 iOS 特殊處理
+          console.log('iOS detected (via URL): Scrolling to target row and adding instruction, NO autoplay.');
 
-        // 找到該行的播放按鈕
-        const playButton = targetRow.querySelector(
-          `.playFromThisRow[data-row-id="${autoPlayTargetRowId}"]`
-        );
-        if (playButton) {
-          console.log('Found play button for auto-play'); // 增加日誌
-          // 先停止當前可能正在播放的內容
-          if (stopButton && isPlaying) {
-            console.log('Stopping existing playback before auto-play...'); // 增加日誌
-            stopButton.click();
+          // 1. 捲動到目標行
+          //   (可以考慮捲動到包含播放按鈕的 TD，讓按鈕更顯眼)
+          const playButtonTd = targetRow.querySelector('td.no'); // 假設播放按鈕在第一格
+          if (playButtonTd) {
+              playButtonTd.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          } else {
+              targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 備用
           }
-          // 使用 setTimeout 確保停止動作完成，以及捲動動畫有時間開始
-          setTimeout(() => {
-            console.log('Triggering click on play button for auto-play'); // 增加日誌
-            playButton.click(); // 觸發點擊事件，開始播放
-          }, 300); // 稍微加長延遲，確保捲動和停止完成
+
+          // 2. 插入提示訊息
+          //    先檢查係無係既經有提示訊息在該列頭前，避免重複插入
+          const existingInstruction = targetRow.previousElementSibling;
+          if (!existingInstruction || !existingInstruction.classList.contains('ios-autoplay-instruction')) {
+              const instructionRow = document.createElement('tr');
+              instructionRow.className = 'ios-autoplay-instruction'; // 加 class 好用 CSS 控制樣式
+              const instructionCell = document.createElement('td');
+              instructionCell.colSpan = 3; // 跨越所有欄位
+              instructionCell.style.textAlign = 'center';
+              instructionCell.style.padding = '8px 0';
+              // 改用客家話个提示
+              instructionCell.innerHTML = '<strong style="color: #007bff;">👇 請點右片个 ▶️ 按鈕來開始播放。</strong>';
+              instructionRow.appendChild(instructionCell);
+              targetRow.parentNode.insertBefore(instructionRow, targetRow); // 插入在目標列頭前
+          } else {
+               console.log('Instruction message already exists for this row.');
+          }
+
+          // 3. **毋執行**自動播放个 click()
+
         } else {
-          console.warn('找不到目標行的播放按鈕:', autoPlayTargetRowId);
+          console.log('Not iOS or not loaded via URL: Proceeding with standard autoplay attempt.');
+          // 非 iOS 或非 URL 載入：維持原本个邏輯，捲動並觸發播放
+          // 捲動到目標行 (playAudio 內部會做，但係為著視覺效果，先捲一次)
+          targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          // 找到該行的播放按鈕
+          const playButton = targetRow.querySelector(
+            `.playFromThisRow[data-row-id="${autoPlayTargetRowId}"]`
+          );
+          if (playButton) {
+            console.log('Found play button for auto-play'); // 增加日誌
+            // 先停止當前可能正在播放的內容
+            if (stopButton && isPlaying) {
+              console.log('Stopping existing playback before auto-play...'); // 增加日誌
+              stopButton.click();
+            }
+            // 使用 setTimeout 確保停止動作完成，以及捲動動畫有時間開始
+            setTimeout(() => {
+              console.log('Triggering click on play button for auto-play'); // 增加日誌
+              playButton.click(); // 觸發點擊事件，開始播放
+            }, 300); // 稍微加長延遲，確保捲動和停止完成
+          } else {
+            console.warn('找不到目標行的播放按鈕:', autoPlayTargetRowId);
+          }
         }
+        // --- *** iOS 處理修改結束 *** ---
+
       }
     } else {
       console.warn('找不到要滾動到的目標行錨點:', autoPlayTargetRowId);
