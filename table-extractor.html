@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>客話認證詞彙 CSV 產生工具</title>
+    <link rel="stylesheet" href="style.css" />
+    <link href="https://tauhu.tw/tauhu-oo.css" rel="stylesheet" />
+
+    <!-- 載入所有詞彙 JS 檔案 -->
+    <script type="text/javascript" src="113四基.js"></script>
+    <script type="text/javascript" src="113四初.js"></script>
+    <script type="text/javascript" src="113四中.js"></script>
+    <script type="text/javascript" src="113四中高.js"></script>
+    <script type="text/javascript" src="113海基.js"></script>
+    <script type="text/javascript" src="113海初.js"></script>
+    <script type="text/javascript" src="113海中.js"></script>
+    <script type="text/javascript" src="113海中高.js"></script>
+    <script type="text/javascript" src="113大基.js"></script>
+    <script type="text/javascript" src="113大初.js"></script>
+    <script type="text/javascript" src="113大中.js"></script>
+    <script type="text/javascript" src="113平基.js"></script>
+    <!-- <script type="text/javascript" src="113平初.js"></script> --> <!-- 假設無這檔案 -->
+    <!-- <script type="text/javascript" src="113平中.js"></script> --> <!-- 假設無這檔案 -->
+    <!-- <script type="text/javascript" src="113平中高.js"></script> --> <!-- 假設無這檔案 -->
+    <script type="text/javascript" src="113安基.js"></script>
+    <!-- <script type="text/javascript" src="113安初.js"></script> --> <!-- 假設無這檔案 -->
+    <!-- <script type="text/javascript" src="113安中.js"></script> --> <!-- 假設無這檔案 -->
+    <!-- <script type="text/javascript" src="113安中高.js"></script> --> <!-- 假設無這檔案 -->
+
+    <!-- 載入主要邏輯同例外檔案 -->
+    <script type="text/javascript" src="main.js"></script>
+    <script type="text/javascript" src="exclusions.js"></script>
+    <!-- 加入 JSZip 套件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        /* 加一息仔基本樣式分版面較好看 */
+        body {
+            font-family: Iansui, '霞鶩文楷 TC', 'LXGW WenKai', tauhu-oo, serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        select, button {
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            cursor: pointer;
+            background-color: #e0e0e0;
+        }
+        button:hover {
+            background-color: #d0d0d0;
+        }
+        #status {
+            margin-top: 15px;
+            font-style: italic;
+            color: #555;
+        }
+        label {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>客話認證詞彙 CSV 產生工具</h2>
+
+    <div>
+        <label for="dialectSelect">腔調：</label>
+        <select id="dialectSelect">
+            <option value="">-- 請擇腔調 --</option>
+            <option value="四">四縣</option>
+            <option value="海">海陸</option>
+            <option value="大">大埔</option>
+            <option value="平">饒平</option>
+            <option value="安">詔安</option>
+        </select>
+
+        <label for="levelSelect">級別：</label>
+        <select id="levelSelect">
+            <option value="">-- 請先擇腔調 --</option>
+            <!-- 級別選項會用 JavaScript 動態產生 -->
+        </select>
+
+        <button id="loadDataBtn">載入資料</button>
+        <button id="exportCsvBtn" disabled>輸出 CSV</button>
+        <button id="exportAllZipBtn">輸出所有 CSV (ZIP)</button> <!-- 新增按鈕 -->
+    </div>
+
+    <div id="status">請擇腔調同級別，點「載入資料」後輸出單一 CSV；還係直接點「輸出所有 CSV (ZIP)」。</div> <!-- 修改提示文字 -->
+
+    <script>
+        // JavaScript 邏輯會加在這搭仔
+        const dialectSelect = document.getElementById('dialectSelect');
+        const levelSelect = document.getElementById('levelSelect');
+        const loadDataBtn = document.getElementById('loadDataBtn');
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const exportAllZipBtn = document.getElementById('exportAllZipBtn'); // 新增：取得新按鈕參照
+        const statusDiv = document.getElementById('status');
+
+        let loadedData = null; // 用來儲存載入个資料陣列
+        let currentDialectLevelName = ''; // 用來儲存目前選擇个腔調級別名稱 (例如 "四基")
+        let csvContent = ''; // 用來儲存產生个 CSV 字串
+
+        // 定義各腔調可用个級別
+        const availableLevels = {
+            "四": ["基", "初", "中", "中高"],
+            "海": ["基", "初", "中", "中高"],
+            "大": ["基", "初", "中"],
+            "平": ["基"],
+            "安": ["基"]
+        };
+
+        // 定義級別代碼對應个中文名稱
+        const levelNames = {
+            "基": "基礎級",
+            "初": "初級",
+            "中": "中級",
+            "中高": "中高級"
+        };
+
+        // 監聽腔調選擇變化
+        dialectSelect.addEventListener('change', function() {
+            const selectedDialect = this.value;
+            levelSelect.innerHTML = '<option value="">-- 請選擇級別 --</option>'; // 清空級別選項
+            exportCsvBtn.disabled = true; // 重設輸出按鈕
+            loadedData = null;
+            statusDiv.textContent = '請選擇級別。';
+
+            if (selectedDialect && availableLevels[selectedDialect]) {
+                availableLevels[selectedDialect].forEach(levelCode => {
+                    const option = document.createElement('option');
+                    option.value = levelCode;
+                    option.textContent = levelNames[levelCode] || levelCode; // 顯示中文級別名稱
+                    levelSelect.appendChild(option);
+                });
+            } else if (selectedDialect) {
+                 statusDiv.textContent = `錯誤：找不到腔調 "${selectedDialect}" 對應的級別資料。`;
+            } else {
+                 levelSelect.innerHTML = '<option value="">-- 請先選擇腔調 --</option>';
+                 statusDiv.textContent = '請選擇腔調與級別，然後點擊「載入資料」。';
+            }
+        });
+
+        // 監聽級別選擇變化 (單純重設狀態)
+         levelSelect.addEventListener('change', function() {
+             exportCsvBtn.disabled = true;
+             loadedData = null;
+             if (dialectSelect.value && this.value) {
+                statusDiv.textContent = '請點擊「載入資料」。';
+             } else if (dialectSelect.value) {
+                 statusDiv.textContent = '請選擇級別。';
+             } else {
+                 statusDiv.textContent = '請選擇腔調與級別，然後點擊「載入資料」。';
+             }
+         });
+
+
+        // 監聽載入按鈕點擊
+        loadDataBtn.addEventListener('click', function() {
+            const dialect = dialectSelect.value;
+            const level = levelSelect.value;
+
+            if (!dialect || !level) {
+                statusDiv.textContent = '錯誤：請先選擇腔調與級別。';
+                return;
+            }
+
+            currentDialectLevelName = dialect + level; // 例如 "四基"
+            const dataObject = window[currentDialectLevelName]; // 嘗試從全域取得資料物件
+
+            if (typeof dataObject === 'undefined') {
+                statusDiv.textContent = `錯誤：找不到對應的資料變數 "${currentDialectLevelName}"。請確認 JS 檔案已正確載入。`;
+                exportCsvBtn.disabled = true;
+                loadedData = null;
+                return;
+            }
+
+            statusDiv.textContent = `正在處理 "${dataObject.name}" 資料...`;
+
+            try {
+                // 1. 解析 CSV 內容
+                // 注意：main.js 裡的 csvToArray 可能需要調整，因為它原本設計用來處理特定格式
+                // 這裡先假設 csvToArray 可以直接用，或者複製過來修改
+                // **重要：** main.js 的 csvToArray 會移除腔調名稱，這裡可能不需要
+                // 我們需要複製並修改 csvToArray 的邏輯，或者確保 main.js 的版本適用
+                const rawDataArray = csvToArrayModified(dataObject.content); // 用修改過的版本
+
+                // 2. 處理每一列資料，產生音檔連結
+                processedData = processDataWithAudioLinks(rawDataArray, dataObject.name);
+
+                // 3. 產生 CSV 字串
+                csvContent = generateCsvString(processedData);
+
+                loadedData = processedData; // 儲存處理過的資料 (雖然目前沒用到)
+                exportCsvBtn.disabled = false; // 啟用輸出按鈕
+                statusDiv.textContent = `"${dataObject.name}" 資料處理完成，共 ${processedData.length -1} 筆詞彙。可以點擊「輸出 CSV」。`; // -1 因為標頭不算
+
+            } catch (error) {
+                console.error("處理資料時發生錯誤:", error);
+                statusDiv.textContent = `處理資料時發生錯誤：${error.message}`;
+                exportCsvBtn.disabled = true;
+                loadedData = null;
+            }
+        });
+
+        // 監聽輸出按鈕點擊
+        exportCsvBtn.addEventListener('click', function() {
+            if (!csvContent) {
+                statusDiv.textContent = '錯誤：沒有可輸出的 CSV 內容。';
+                return;
+            }
+
+            try {
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+
+                // 組合檔案名稱
+                const dialectName = dialectSelect.options[dialectSelect.selectedIndex].text;
+                const levelName = levelSelect.options[levelSelect.selectedIndex].text;
+                const filename = `（愛灣語處理）客話詞彙-${dialectName}-${levelName}.csv`;
+
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                statusDiv.textContent = `"${filename}" 已開始下載。`;
+            } catch (error) {
+                 console.error("輸出 CSV 時發生錯誤:", error);
+                 statusDiv.textContent = `輸出 CSV 時發生錯誤：${error.message}`;
+            }
+        });
+
+        // --- 輔助函式 ---
+
+        // 修改過的 csvToArray，保留原始標頭，處理可能存在的 \r
+        function csvToArrayModified(str, delimiter = ',') {
+            str = str.replace(/\r/g, ""); // 移除 \r
+            const rows = str.split('\n');
+            if (rows.length === 0) return [];
+
+            const headers = rows[0].split(delimiter);
+            const data = [headers]; // 將標頭作為第一列
+
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i].trim() === '') continue; // 跳過空行
+                const values = rows[i].split(delimiter);
+                // 確保值數量與標頭數量一致，不足補空字串
+                 while (values.length < headers.length) {
+                     values.push('');
+                 }
+                 // 如果值數量超過標頭，可能表示資料有問題，但這裡先截斷
+                 if (values.length > headers.length) {
+                     values.length = headers.length;
+                 }
+                data.push(values);
+            }
+            return data;
+        }
+
+
+        // 處理資料並產生音檔連結的函式
+        function processDataWithAudioLinks(rawDataArray, dataObjectName) {
+            if (rawDataArray.length < 2) return []; // 至少要有標頭跟一列資料
+
+            const headers = rawDataArray[0];
+            const data = rawDataArray.slice(1); // 實際資料
+
+            // --- 複製 main.js generate 函式中解析腔調級別的邏輯 ---
+            let 腔 = '';
+            let 級 = '';
+            腔 = dataObjectName.substring(0, 1);
+            級 = dataObjectName.substring(1);
+
+            // 檢查 exclusions.js 是否已載入並定義了例外音檔變數
+            let 例外音檔 = [];
+            const exceptionVarName = 級 + '例外音檔'; // 例如 "基例外音檔"
+            if (typeof window[exceptionVarName] !== 'undefined') {
+                 例外音檔 = window[exceptionVarName];
+            } else {
+                 console.warn(`警告：找不到例外音檔變數 "${exceptionVarName}"，將不使用例外規則。`);
+            }
+
+
+            const generalMediaYr = '112'; // 根據 main.js
+            let 目錄級 = '';
+            let 目錄另級 = '';
+            let 檔腔 = '';
+            let 檔級 = '';
+
+            switch (腔) {
+                case '四': 檔腔 = 'si'; break;
+                case '海': 檔腔 = 'ha'; break;
+                case '大': 檔腔 = 'da'; break;
+                case '平': 檔腔 = 'rh'; break;
+                case '安': 檔腔 = 'zh'; break;
+            }
+            switch (級) {
+                case '基': 目錄級 = '5'; 目錄另級 = '1'; break;
+                case '初': 目錄級 = '1'; break;
+                case '中': 目錄級 = '2'; 檔級 = '1'; break;
+                case '中高': 目錄級 = '3'; 檔級 = '2'; break;
+            }
+            // --- 複製結束 ---
+
+            // 找到原始標頭中各欄位的索引
+            const idx編號 = headers.findIndex(h => h.includes('編號'));
+            const idx客語 = headers.findIndex(h => h.includes('客家語') || h.includes('客語'));
+            const idx標音 = headers.findIndex(h => h.includes('標音'));
+            const idx華語 = headers.findIndex(h => h.includes('華語詞義'));
+            const idx例句 = headers.findIndex(h => h.includes('例句'));
+            const idx翻譯 = headers.findIndex(h => h.includes('翻譯'));
+            const idx備註 = headers.findIndex(h => h.includes('備註'));
+            const idx分類 = headers.findIndex(h => h.includes('分類'));
+
+            // 檢查是否所有必要欄位都找到了
+            if ([idx編號, idx客語, idx標音, idx華語, idx例句, idx翻譯, idx備註, idx分類].includes(-1)) {
+                 console.error("錯誤：原始 CSV 標頭缺少必要欄位。索引:", {idx編號, idx客語, idx標音, idx華語, idx例句, idx翻譯, idx備註, idx分類});
+                 throw new Error("原始 CSV 標頭缺少必要欄位。");
+            }
+
+
+            const processedData = [];
+            // 加入新的 CSV 標頭
+            processedData.push([
+                "編號", "客話詞", "客話詞羅馬字", "客話詞音檔連結",
+                "華語詞義", "客話例句", "客話例句音檔連結", "華語翻譯",
+                "備註", "分類"
+            ]);
+
+            data.forEach(row => {
+                const original編號 = row[idx編號];
+                if (!original編號 || !original編號.includes('-')) return; // 跳過無效編號
+
+                // --- 複製 main.js buildTableAndSetupPlayback 中處理編號和例外音檔的邏輯 ---
+                let mediaYr = generalMediaYr;
+                let pre112Insertion = '';
+                let 句目錄級 = 目錄級;
+                let mediaNo = '';
+
+                var no = original編號.split('-');
+                if (no.length < 2) return; // 無效編號格式
+
+                // 格式化編號 (補零)
+                if (parseInt(no[0]) <= 9) no[0] = '0' + parseInt(no[0]);
+                if (級 === '初' && parseInt(no[0]) <= 99) no[0] = '0' + no[0]; // 初級特殊處理
+                if (parseInt(no[1]) <= 9) no[1] = '0' + parseInt(no[1]);
+                if (parseInt(no[1]) <= 99) no[1] = '0' + no[1];
+                mediaNo = no[1]; // mediaNo 在此賦值
+
+                // 例外音檔處理
+                const index = 例外音檔.findIndex(([編號]) => 編號 === original編號);
+                if (index !== -1) {
+                    const matchedElement = 例外音檔[index];
+                    mediaYr = matchedElement[1];
+                    mediaNo = matchedElement[2]; // 例外 mediaNo 在此賦值
+                    pre112Insertion = 's/';
+                    句目錄級 = 目錄另級;
+                }
+
+                const 詞目錄 = 目錄級 + '/' + 檔腔 + '/' + 檔級 + 檔腔;
+                const 句目錄 = 句目錄級 + '/' + 檔腔 + '/' + pre112Insertion + 檔級 + 檔腔;
+                // --- 複製結束 ---
+
+                // 產生音檔連結
+                const 詞音檔連結 = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${generalMediaYr}/${詞目錄}-${no[0]}-${no[1]}.mp3`;
+                let 例句音檔連結 = '';
+                // 只有在有例句時才產生例句音檔連結 (檢查原始例句欄位)
+                if (row[idx例句] && row[idx例句].trim() !== '') {
+                     例句音檔連結 = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${句目錄}-${no[0]}-${mediaNo}s.mp3`;
+                }
+
+
+                // 組合新的一列資料
+                processedData.push([
+                    original編號,
+                    row[idx客語] || '',
+                    row[idx標音] || '',
+                    詞音檔連結,
+                    (row[idx華語] || '').replace(/"/g, ''), // 移除可能存在的引號
+                    (row[idx例句] || '').replace(/"/g, '').replace(/\n/g, ' '), // 移除引號並將換行變空格
+                    例句音檔連結,
+                    (row[idx翻譯] || '').replace(/"/g, '').replace(/\n/g, ' '), // 移除引號並將換行變空格
+                    row[idx備註] || '',
+                    row[idx分類] || ''
+                ]);
+            });
+
+            return processedData;
+        }
+
+        // 產生 CSV 字串的函式 (處理引號和逗號)
+        function generateCsvString(dataArray) {
+            return dataArray.map(row =>
+                row.map(field => {
+                    const fieldStr = String(field === null || typeof field === 'undefined' ? '' : field);
+                    // 如果欄位包含逗號、引號或換行符，用雙引號包起來，並將內部的雙引號替換為兩個雙引號
+                    if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+                        return `"${fieldStr.replace(/"/g, '""')}"`;
+                    }
+                    return fieldStr;
+                }).join(',')
+            ).join('\n');
+        }
+
+        // --- 新增：處理輸出所有 CSV (ZIP) ---
+        exportAllZipBtn.addEventListener('click', async function() { // 改用 async 函式
+            statusDiv.textContent = '開始處理所有詞彙資料並打包成 ZIP... 請稍候...';
+            this.disabled = true; // 處理中禁用按鈕
+            loadDataBtn.disabled = true;
+            exportCsvBtn.disabled = true;
+            dialectSelect.disabled = true;
+            levelSelect.disabled = true;
+
+            const zip = new JSZip();
+            let errorOccurred = false;
+            let filesAdded = 0;
+
+            // 組合所有腔調級別的變數名稱
+            const allDataObjectNames = [];
+            const dialectNameMapping = { "四": "四縣", "海": "海陸", "大": "大埔", "平": "饒平", "安": "詔安" };
+
+            for (const dialectCode in availableLevels) {
+                const dialectFullName = dialectNameMapping[dialectCode] || dialectCode;
+                availableLevels[dialectCode].forEach(levelCode => {
+                    const levelFullName = levelNames[levelCode] || levelCode;
+                    allDataObjectNames.push({
+                        varName: dialectCode + levelCode, // e.g., 四基
+                        dialect: dialectFullName,       // e.g., 四縣
+                        level: levelFullName            // e.g., 基礎級
+                    });
+                });
+            }
+
+            console.log("準備處理的資料變數:", allDataObjectNames);
+
+            for (const item of allDataObjectNames) {
+                const dataObjectName = item.varName;
+                const dataObject = window[dataObjectName];
+
+                if (typeof dataObject === 'undefined') {
+                    console.warn(`警告：找不到資料變數 "${dataObjectName}"，跳過此檔案。`);
+                    continue; // 跳過不存在的資料
+                }
+
+                statusDiv.textContent = `正在處理 ${item.dialect}-${item.level}...`;
+                console.log(`Processing ${dataObjectName}...`);
+
+                try {
+                    // 1. 解析
+                    const rawDataArray = csvToArrayModified(dataObject.content);
+                    // 2. 處理 (含音檔連結)
+                    const processedData = processDataWithAudioLinks(rawDataArray, dataObject.name);
+                    // 3. 產生 CSV 字串
+                    const csvString = generateCsvString(processedData);
+                    // 4. 產生檔名
+                    const filename = `（愛灣語處理）客話詞彙-${item.dialect}-${item.level}.csv`;
+                    // 5. 加入 ZIP
+                    zip.file(filename, csvString);
+                    filesAdded++;
+                    console.log(`Added ${filename} to ZIP.`);
+
+                } catch (error) {
+                    console.error(`處理 "${dataObjectName}" 時發生錯誤:`, error);
+                    statusDiv.textContent = `處理 "${dataObjectName}" 時發生錯誤: ${error.message}。繼續處理下一個...`;
+                    errorOccurred = true;
+                    // 即使發生錯誤，也繼續處理下一個檔案
+                }
+                 // 短暫延遲避免瀏覽器卡頓 (可選)
+                 await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            if (filesAdded === 0 && errorOccurred) {
+                 statusDiv.textContent = '處理所有檔案時皆發生錯誤，無法產生 ZIP 檔案。';
+                 this.disabled = false; // 重新啟用按鈕
+                 loadDataBtn.disabled = false;
+                 dialectSelect.disabled = false;
+                 levelSelect.disabled = false;
+                 // exportCsvBtn 保持 disabled
+                 return;
+            } else if (filesAdded === 0) {
+                 statusDiv.textContent = '找不到任何有效的詞彙資料，無法產生 ZIP 檔案。';
+                 this.disabled = false; // 重新啟用按鈕
+                 loadDataBtn.disabled = false;
+                 dialectSelect.disabled = false;
+                 levelSelect.disabled = false;
+                 return;
+            }
+
+
+            statusDiv.textContent = `共 ${filesAdded} 個檔案處理完成，正在產生 ZIP 檔案...`;
+            console.log(`Generating ZIP file with ${filesAdded} entries...`);
+
+            try {
+                const zipBlob = await zip.generateAsync({ type: "blob" });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(zipBlob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "（愛灣語處理）客話認證詞彙（全部）.zip");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                if (errorOccurred) {
+                    statusDiv.textContent = `ZIP 檔案 "（愛灣語處理）客話認證詞彙（全部）.zip" 已開始下載，但部分檔案處理失敗 (共 ${filesAdded} 個成功)。`;
+                } else {
+                    statusDiv.textContent = `ZIP 檔案 "（愛灣語處理）客話認證詞彙（全部）.zip" (共 ${filesAdded} 個檔案) 已開始下載。`;
+                }
+
+            } catch (error) {
+                console.error("產生或下載 ZIP 檔案時發生錯誤:", error);
+                statusDiv.textContent = `產生或下載 ZIP 檔案時發生錯誤: ${error.message}`;
+                errorOccurred = true; // 標記 ZIP 產生失敗
+            } finally {
+                // 無論成功或失敗，最後都要重新啟用按鈕
+                this.disabled = false;
+                loadDataBtn.disabled = false;
+                dialectSelect.disabled = false;
+                 levelSelect.disabled = false;
+                // exportCsvBtn 保持 disabled，因為沒有單獨載入資料
+                console.log("ZIP processing finished.");
+            }
+        });
+        // --- 新增結束 ---
+
+    </script>
+
+</body>
+</html>
