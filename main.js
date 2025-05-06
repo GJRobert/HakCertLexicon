@@ -37,6 +37,8 @@ function extractDialectLevelCodes(tableName) {
     levelCode = '2'; // 中級對應代碼 2
   } else if (tableName.endsWith('中高級')) {
     levelCode = '3'; // 中高級對應代碼 3
+  } else if (tableName.endsWith('高級')) {
+    levelCode = '4'; // 高級對應代碼 4
   } else {
     console.error('無法從 tableName 解析級別:', tableName);
     return null; // 無法識別級別
@@ -222,6 +224,11 @@ function generate(content, initialCategory = null, targetRowId = null) {
       目錄級 = '3';
       檔級 = '2';
       級名 = '中高級';
+      break;
+    case '高':
+      目錄級 = '4';
+      檔級 = '3';
+      級名 = '高級';
       break;
     default:
       break;
@@ -616,7 +623,10 @@ function buildTableAndSetupPlayback(
     // TD3: 例句、音檔、翻譯
     const td3 = document.createElement('td');
     td3.dataset.label = '例句'; // <-- 加入 data-label
-    if (line.例句 && line.例句.trim() !== '') {
+
+    const hasExampleSentenceText = line.例句 && line.例句.trim() !== '';
+
+    if (hasExampleSentenceText) {
       const sentenceSpan = document.createElement('span');
       sentenceSpan.className = 'sentence';
       sentenceSpan.innerHTML = line.例句
@@ -624,17 +634,33 @@ function buildTableAndSetupPlayback(
         .replace(/\n/g, '<br>');
       td3.appendChild(sentenceSpan);
       td3.appendChild(document.createElement('br'));
-      const audio2 = document.createElement('audio');
-      audio2.className = 'media';
-      audio2.controls = true;
-      audio2.preload = 'none';
-      const source2 = document.createElement('source');
-      // *** 注意路徑組合 ***
-      source2.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${句目錄}-${no[0]}-${mediaNo}s.mp3`;
-      source2.type = 'audio/mpeg';
-      audio2.appendChild(source2);
-      td3.appendChild(audio2);
-      audioElementsList.push(audio2); // 收集音檔
+
+      // --- 修改：根據係無係「高級」來決定愛用實際音檔還係假音檔 ---
+      if (dialectInfo.級名 === '高級') {
+        // 「高級」級別：就算有例句文字，也加入一個跳過的假音檔
+        const dummyAudioForAdvanced = document.createElement('audio');
+        dummyAudioForAdvanced.className = 'media';
+        dummyAudioForAdvanced.dataset.skip = 'true';
+        dummyAudioForAdvanced.controls = false;
+        dummyAudioForAdvanced.preload = 'none';
+        dummyAudioForAdvanced.style.display = 'none'; // 確保隱藏
+        td3.appendChild(dummyAudioForAdvanced);
+        audioElementsList.push(dummyAudioForAdvanced); // 收集假音檔
+      } else {
+        // 非「高級」級別：若有例句文字，則加入實際个 audio2
+        const audio2 = document.createElement('audio');
+        audio2.className = 'media';
+        audio2.controls = true;
+        audio2.preload = 'none';
+        const source2 = document.createElement('source');
+        source2.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${句目錄}-${no[0]}-${mediaNo}s.mp3`;
+        source2.type = 'audio/mpeg';
+        audio2.appendChild(source2);
+        td3.appendChild(audio2);
+        audioElementsList.push(audio2); // 收集音檔
+      }
+      // --- 修改結束 ---
+
       td3.appendChild(document.createElement('br'));
       const translationText = document.createElement('span');
       translationText.innerHTML = line.翻譯
@@ -642,16 +668,15 @@ function buildTableAndSetupPlayback(
         .replace(/\n/g, '<br>');
       td3.appendChild(translationText);
     } else {
-      // 加入 skip 的 audio
-      const audio3 = document.createElement('audio');
-      audio3.className = 'media';
-      audio3.dataset.skip = 'true';
-      audio3.controls = false; // 可以設為 false 因為是隱藏的
-      audio3.preload = 'none';
-      audio3.style.display = 'none'; // 確保隱藏
-      // source 可以不加或加一個無效 src
-      td3.appendChild(audio3);
-      audioElementsList.push(audio3); // 仍然收集，以保持索引一致
+      // 無例句文本：加入一個跳過的假音檔
+      const dummyAudioNoSentence = document.createElement('audio');
+      dummyAudioNoSentence.className = 'media';
+      dummyAudioNoSentence.dataset.skip = 'true';
+      dummyAudioNoSentence.controls = false;
+      dummyAudioNoSentence.preload = 'none';
+      dummyAudioNoSentence.style.display = 'none'; // 確保隱藏
+      td3.appendChild(dummyAudioNoSentence);
+      audioElementsList.push(dummyAudioNoSentence); // 收集假音檔，保持索引一致
     }
     item.appendChild(td3);
 
@@ -1594,6 +1619,9 @@ document.addEventListener('DOMContentLoaded', function () {
       case '3':
         levelName = '中高級';
         break;
+      case '4':
+        levelName = '高級';
+        break;
     }
 
     if (dialectName && levelName) {
@@ -2030,22 +2058,27 @@ function mapTableNameToDataVar(tableName) {
     四縣初級: '四初',
     四縣中級: '四中',
     四縣中高級: '四中高',
+    四縣高級: '四高',
     海陸基礎級: '海基',
     海陸初級: '海初',
     海陸中級: '海中',
     海陸中高級: '海中高',
+    海陸高級: '海高',
     大埔基礎級: '大基',
     大埔初級: '大初',
     大埔中級: '大中',
     大埔中高級: '大中高',
+    大埔高級: '大高',
     饒平基礎級: '平基',
     饒平初級: '平初',
     饒平中級: '平中',
     饒平中高級: '平中高',
+    饒平高級: '平高',
     詔安基礎級: '安基',
     詔安初級: '安初',
     詔安中級: '安中',
     詔安中高級: '安中高',
+    詔安高級: '安高',
     // 如果未來有更多級別或腔調，需要在此處更新
   };
   // 特殊處理：如果傳入的已經是變數名，直接返回
