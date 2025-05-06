@@ -166,6 +166,7 @@ audio {
 .sentence,
 .sentence * {
   font-family: 'Marion', 'Marion+jfBunguan', tauhu-oo, cursive;
+  text-decoration: underline;
 }
 #header {
   position: sticky;
