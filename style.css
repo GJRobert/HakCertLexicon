@@ -48,6 +48,10 @@
   --iMazinGrace-1-rgb: 170, 150, 183; /* 新增 RGB 版本方便用 rgba() */
   --paused-yellow-rgb: 255, 250, 205; /* RGB 版本方便用 rgba() */
   --paused-yellow: rgba(var(--paused-yellow-rgb), 1); /* 改用 rgba 確保一致 */
+  /* --- Focus Glow Variables (Light Mode) --- */
+  --focus-glow-color: rgba(59, 130, 246, 0.65); /* 日時頭用較亮个藍色 */
+  --focus-glow-blur: 6px;
+  --focus-glow-spread: 1px;
 }
 
 /* radio button style from <https: //webspe.net/tools/en/radio-button/> */
@@ -81,6 +85,25 @@
 
 .radioButton:checked {
   background-color: transparent;
+}
+
+/* --- Global Focus Glow Style --- */
+:is(button, select, textarea, a, input):focus-visible,
+[contenteditable="true"]:focus-visible {
+  outline: none; /* 拿忒預設个 outline，改用 box-shadow 做光暈 */
+  box-shadow: 0 0 var(--focus-glow-blur) var(--focus-glow-spread) var(--focus-glow-color);
+  transition: box-shadow 0.15s ease-in-out; /* 光暈出現/消失个平滑過渡 */
+}
+
+/* --- Specific Focus Adjustments --- */
+/* 確保腔調級別連結个 focus 光暈有圓角 */
+.dialect > span[data-varname] > a:focus-visible {
+  border-radius: 6px; /* 比佢外背 span 个 8px 細一息仔，較好看 */
+}
+
+/* 確保進度詳情連結个 focus 光暈也有圓角 */
+#progressDetails > a:focus-visible {
+  border-radius: 4px; /* 設定一個適中个圓角 */
 }
 
 .radioButton:checked::after {
@@ -465,6 +488,9 @@ span[data-varname].active-dialect-level {
     --dark-now-playing-bg: rgba(var(--iMazinGrace-1-rgb), 0.4); /* 暗模式下做得稍為透明兜 */
     --dark-paused-yellow: rgba(var(--dark-paused-yellow-rgb), 0.5); /* 暗模式下个黃色，愛確定在深色背景看得清楚 */
     --dark-paused-yellow-rgb: 255, 255, 150;
+    /* --- Focus Glow Variables (Dark Mode) --- */
+    --focus-glow-color: rgba(96, 165, 250, 0.75); /* 暗夜模式用較亮、較飽和个藍色 */
+    /* --focus-glow-blur and --focus-glow-spread 會承接 :root 个設定 */
   }
 
   body {
@@ -742,7 +768,7 @@ span[data-varname].active-dialect-level {
 
     /* 確保 nowPlaying 樣式在暗夜卡片模式下正確應用 */
     #generated tr#nowPlaying { /* <-- 目標 tr#nowPlaying */
-        background-color: var(--dark-now-playing-bg) !important; /* <-- 明確重新設定暗夜背景色，加 !important */
+        background-color: var(--dark-now-playing-bg); /* <-- 明確重新設定暗夜背景色，加 !important */
         transition: background-color 0.4s ease; /* <-- 也重新設定過渡效果 */
     }
     #generated tr#nowPlaying.paused-playback {

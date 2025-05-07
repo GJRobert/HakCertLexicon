@@ -1806,6 +1806,58 @@ document.addEventListener('DOMContentLoaded', function () {
   setTimeout(adjustHeaderFontSizeOnOverflow, 50); // 稍微延遲
 });
 
+document.addEventListener('keydown', function(event) {
+  // --- 空白鍵：暫停/繼續播放 ---
+  if (event.key === ' ' || event.code === 'Space') {
+    const activeElement = document.activeElement;
+    // 檢查目前 focus 个元素係無係輸入框、選擇單、按鈕這兜
+    const isInteractiveElementFocused = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      activeElement.tagName === 'BUTTON' ||
+      activeElement.isContentEditable
+    );
+
+    // 只有在 isPlaying 係 true，而且無 focus 在互動元素項，正處理空白鍵
+    if (isPlaying && !isInteractiveElementFocused) {
+      event.preventDefault(); // 避免頁面捲動
+      const pauseResumeButton = document.getElementById('pauseResumeBtn');
+      if (pauseResumeButton) {
+        console.log('Global hotkey: Spacebar pressed, toggling pause/resume.');
+        pauseResumeButton.click();
+      }
+    }
+  }
+
+  // --- Esc 鍵：停止播放 ---
+  if (event.key === 'Escape' || event.code === 'Escape') {
+    const activeElement = document.activeElement;
+    const isInteractiveElementFocused = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.tagName === 'SELECT' ||
+      activeElement.tagName === 'BUTTON' ||
+      activeElement.isContentEditable
+    );
+
+    if (isInteractiveElementFocused) {
+      // 如果有互動元素係 focus 狀態，就先 blur 佢
+      activeElement.blur();
+      event.preventDefault(); // 避免 Esc 觸發元素本身个其他預設行為 (例如關閉下拉選單)
+      console.log('Global hotkey: Escape pressed, blurred active element:', activeElement);
+    } else if (isPlaying) {
+      // 如果無互動元素係 focus 狀態，而且音樂在播放中，就停止播放
+      const stopButton = document.getElementById('stopBtn');
+      if (stopButton) {
+        console.log('Global hotkey: Escape pressed (no interactive focus), stopping playback.');
+        stopButton.click();
+      }
+    }
+    // 如果無互動元素 focus，也無音樂在播，Esc 就無作用
+  }
+});
+
 /* 標示大埔變調 */
 function 大埔高降異化() {
   const specialChars = ['à', 'è', 'ì', 'ò', 'ù'];
