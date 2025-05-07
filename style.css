@@ -715,7 +715,7 @@ span[data-varname].active-dialect-level {
 
   /* 確保 nowPlaying 樣式在卡片模式下正確應用 */
   #generated tr#nowPlaying { /* <-- 目標 tr#nowPlaying */
-      background-color: rgba(var(--iMazinGrace-1-rgb), 0.5) !important; /* <-- 明確重新設定背景色，加 !important 提高優先級 */
+      background-color: rgba(var(--iMazinGrace-1-rgb), 0.5); /* <-- 明確重新設定背景色，莫 !important 啦！就係你造成動畫失效！ */
       transition: background-color 0.4s ease; /* <-- 也重新設定過渡效果 */
   }
   #generated tr#nowPlaying.paused-playback {
