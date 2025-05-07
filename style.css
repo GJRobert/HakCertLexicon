@@ -329,7 +329,7 @@ tr#nowPlaying {
 }
 /* --- 新增暫停狀態个樣式 --- */
 tr#nowPlaying.paused-playback {
-  background-color: var(--paused-yellow);
+  background-color: var(--paused-yellow); /* Roo: 恢復這行，分 Firefox 闊螢幕至少有底色 */
   animation: pulse-yellow-effect 3s infinite ease-in-out; /* 應用動畫 */
 }
 
@@ -719,9 +719,9 @@ span[data-varname].active-dialect-level {
       transition: background-color 0.4s ease; /* <-- 也重新設定過渡效果 */
   }
   #generated tr#nowPlaying.paused-playback {
-    background-color: transparent !important; /* 確保背景透明分動畫控制 */
+    background-color: var(--paused-yellow) !important; /* Roo: 針對狹螢幕 Firefox，明確加上背景色 */
     transition: none !important; /* <--- 新增：強制拿忒過渡效果，避免同動畫打架 */
-    animation: pulse-yellow-effect 3s infinite ease-in-out !important; /* 重新宣告動畫，加 !important */
+    animation: pulse-yellow-effect 3s infinite ease-in-out !important; /* 重新宣告動畫，加回 !important 試看啊 Firefox */
   }
 
 
@@ -747,9 +747,9 @@ span[data-varname].active-dialect-level {
         transition: background-color 0.4s ease; /* <-- 也重新設定過渡效果 */
     }
     #generated tr#nowPlaying.paused-playback {
-      background-color: transparent !important; /* 確保背景透明分動畫控制 */
+      background-color: var(--dark-paused-yellow) !important; /* Roo: 針對狹螢幕 Firefox 暗黑模式，明確加上背景色 */
       transition: none !important; /* <--- 新增：強制拿忒過渡效果，避免同動畫打架 */
-      animation: pulse-dark-yellow-effect 3s infinite ease-in-out !important; /* 重新宣告暗夜動畫，加 !important */
+      animation: pulse-dark-yellow-effect 3s infinite ease-in-out !important; /* 重新宣告暗夜動畫，加回 !important 試看啊 Firefox */
     }
   }
 }
