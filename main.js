@@ -850,6 +850,31 @@ function buildTableAndSetupPlayback(
             block: 'center', // 試看啊用 'center' 或者 'nearest'
             inline: 'nearest', // 確保水平方向也盡量滾入畫面
           });
+
+          // --- *** 新增：播放成功後，在這裡儲存書籤 *** ---
+          // Roo: 這邊个 category 變數來自 buildTableAndSetupPlayback 个參數
+          // Roo: 這邊个 dialectInfo 變數也來自 buildTableAndSetupPlayback 个參數
+          // Roo: 這邊个 bookmarkButtonsList 變數也來自 buildTableAndSetupPlayback 內部个宣告
+          const rowButton = currentAudio.closest('tr')?.querySelector('button[data-row-id]');
+          if (rowButton) {
+            const rowId = rowButton.dataset.rowId;
+            let rowNum = rowId.replace(/^0+/, '');
+            let totalRowsInCurrentCategory = bookmarkButtonsList.length;
+            let percentage = (rowNum / totalRowsInCurrentCategory) * 100;
+            let percentageFixed = percentage.toFixed(2);
+
+            saveBookmark(
+              rowId,
+              percentageFixed,
+              category, // 這就係 currentCategoryForBookmark
+              dialectInfo.fullLvlName // 這就係 currentTableNameForBookmark
+            );
+            console.log(`播放成功，儲存書籤至列表：${rowId} (來自 playAudio)`);
+          } else {
+            console.warn('無法找到對應的 rowButton 來儲存書籤 (來自 playAudio)');
+          }
+          // --- *** 書籤儲存結束 *** ---
+
         } else if (rowElement) {
           // 萬一尋無 td (理論上毋會)，退回捲動 tr
           console.warn('Could not find audio TD, falling back to scroll TR.');
@@ -899,35 +924,8 @@ function buildTableAndSetupPlayback(
     });
   });
 
-  audioElements.forEach((audio) => {
-    // 檢查是否為可播放的音檔 (非 data-skip)
-    if (audio.dataset.skip !== 'true') {
-      audio.addEventListener('play', function () {
-        const rowButton = this.closest('tr')?.querySelector(
-          'button[data-row-id]'
-        );
-        if (!rowButton) return;
-        const rowId = rowButton.dataset.rowId;
-        let rowNum = rowId.replace(/^0+/, '');
-        // 確保 bookmarkButtonsList 在這裡可用，或者傳遞總行數
-        let totalRows = bookmarkButtonsList.length; // 假設 bookmarkButtonsList 包含所有按鈕
-        let percentage = (rowNum / totalRows) * 100;
-        let percentageFixed = percentage.toFixed(2);
-
-        // --- 修改開始 ---
-        // 呼叫新的儲存函式
-        saveBookmark(
-          rowId,
-          percentageFixed,
-          currentCategoryForBookmark,
-          currentTableNameForBookmark
-        );
-        // --- 修改結束 ---
-
-        console.log(`播放觸發進度儲存至列表：${rowId}`); // 可以保留這個 log
-      });
-    }
-  });
+  // --- Roo: 拿忒對 audioElements 加个 'play' 事件監聽器，該隻監聽器會呼叫 saveBookmark ---
+  // --- 改由 playAudio 函式內部，在音檔成功播放後正儲存書籤 ---
 
   // --- 修改：尋找或建立 Header 內的播放控制按鈕 ---
   let audioControlsDiv = header.querySelector('#audioControls');
@@ -1819,17 +1817,58 @@ document.addEventListener('keydown', function(event) {
       activeElement.isContentEditable
     );
 
-    // 只有在 isPlaying 係 true，而且無 focus 在互動元素項，正處理空白鍵
-    if (isPlaying && !isInteractiveElementFocused) {
-      event.preventDefault(); // 避免頁面捲動
-      const pauseResumeButton = document.getElementById('pauseResumeBtn');
-      if (pauseResumeButton) {
-        console.log('Global hotkey: Spacebar pressed, toggling pause/resume.');
-        pauseResumeButton.click();
+    if (!isInteractiveElementFocused) {
+      if (isPlaying) {
+        event.preventDefault(); // 避免頁面捲動
+        const pauseResumeButton = document.getElementById('pauseResumeBtn');
+        if (pauseResumeButton) {
+          console.log('Global hotkey: Spacebar pressed (isPlaying), toggling pause/resume.');
+          pauseResumeButton.click();
+        }
+      } else { // !isPlaying: 載入並播放第一筆書籤
+        const progressDropdown = document.getElementById('progressDropdown');
+        if (progressDropdown && progressDropdown.options.length > 1) {
+          // 取得下拉選單中第一筆實際書籤个 value (索引 1，因為索引 0 係 "學習進度")
+          const selectedValue = progressDropdown.options[1].value;
+          const bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+          // 根據 value 尋著對應个書籤物件
+          const firstBookmark = bookmarks.find(bm => bm.tableName + '||' + bm.cat === selectedValue);
+
+          if (firstBookmark) {
+            const targetTableName = firstBookmark.tableName;
+            const targetCategory = firstBookmark.cat;
+            const targetRowIdToGo = firstBookmark.rowId;
+            const dataVarName = mapTableNameToDataVar(targetTableName);
+
+            if (dataVarName && typeof window[dataVarName] !== 'undefined') {
+              event.preventDefault(); // 處理了事件，避免頁面捲動
+              const dataObject = window[dataVarName];
+              console.log('Global hotkey: Spacebar pressed (!isPlaying), loading first bookmark:', firstBookmark);
+
+              // 1. 更新腔調級別連結个 active 狀態
+              document.querySelectorAll('span[data-varname]').forEach(span => {
+                span.classList.remove('active-dialect-level');
+              });
+              const activeDialectSpan = document.querySelector(`.dialect > span[data-varname="${dataVarName}"]`);
+              if (activeDialectSpan) {
+                activeDialectSpan.classList.add('active-dialect-level');
+              }
+
+              // 2. 呼叫 generate 函式，佢會處理類別選擇、表格建立同開始播放
+              //    因為無透過 URL 參數，所以毋會觸發 modal
+              generate(dataObject, targetCategory, targetRowIdToGo);
+
+              // 3. 確保下拉選單視覺上也選到第一筆 (雖然 saveBookmark 會再處理一次，但係先設定較好)
+              progressDropdown.selectedIndex = 1;
+
+              // 註：progressDetailsSpan 个內容會在 saveBookmark 函式中更新
+            }
+          }
+          // 若尋無書籤或相關資料，空白鍵在這情況下就無作用
+        }
       }
     }
   }
-
   // --- Esc 鍵：停止播放 ---
   if (event.key === 'Escape' || event.code === 'Escape') {
     const activeElement = document.activeElement;
