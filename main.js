@@ -2706,3 +2706,15 @@ function calculateTotalRequiredWidth(headerElement) {
     }
     return totalWidth;
 }
+
+// --- 新增：自動 blur 觸發元素的程式碼 ---
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('button').forEach(element => { // 改做淨選擇 button
+    element.addEventListener('click', function() {
+      this.blur(); // 拿忒點擊元素的焦點
+      console.log('Blurred element after click:', this); // 加 log 方便 Debug
+    });
+  });
+  console.log('Automatic blur event listeners added to buttons.'); // Log 乜愛改一下
+});
+// --- 新增結束 ---
