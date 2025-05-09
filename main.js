@@ -2706,3 +2706,26 @@ function calculateTotalRequiredWidth(headerElement) {
     }
     return totalWidth;
 }
+
+// --- 修改：自動 blur 觸發元素的程式碼，改用事件委派 ---
+document.addEventListener('click', function(event) {
+  const targetElement = event.target;
+  // 尋找被點擊的元素或其最近的 button 父元素
+  const button = targetElement.closest('button');
+
+  // 如果找到 button 元素
+  if (button) {
+    // 這裡可以加入排除特定 dropdown 按鈕的條件
+    // 例如，如果你的 dropdown 按鈕有一個特定的 class 'dropdown-trigger'，可以取消註解下面這段：
+    // if (!button.classList.contains('dropdown-trigger')) {
+    //   button.blur();
+    //   console.log('Blurred element after click (delegated):', button);
+    // } else {
+    //   console.log('Button with class "dropdown-trigger" was clicked, not blurring:', button);
+    // }
+    button.blur(); // 目前對所有按鈕都 blur
+    console.log('Blurred element after click (delegated):', button);
+  }
+});
+console.log('Automatic blur event listener added to document for all buttons (using delegation).');
+// --- 修改結束 ---

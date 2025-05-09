@@ -372,6 +372,13 @@ tr#nowPlaying.paused-playback {
   cursor: pointer; /* 滑鼠指標 */
   flex-shrink: 1; /* 允許被壓縮 */
 }
+/* --- 修改：加強下拉選單个 focus 光暈，並確保 Firefox 點擊時顯示 --- */
+#progressDropdown:focus { /* 改用 :focus 來處理滑鼠點擊个情況 */
+  border-color: var(--focus-glow-color); /* 直接改變邊框顏色，較明顯 */
+  box-shadow: 0 0 8px 2px var(--focus-glow-color); /* 加強原本个光暈效果 */
+  /* 加入邊框顏色个過渡效果，同 box-shadow 一樣時間 */
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
 
 #progressDetails {
   font-size: clamp(18px, 1.5vw, 30px); /* 稍微小一點的字 */
@@ -746,7 +753,7 @@ span[data-varname].active-dialect-level {
   }
   #generated tr#nowPlaying.paused-playback {
     /* background-color: transparent !important; */ /* 動畫會處理背景 */
-    animation: pulse-yellow-effect 3s infinite ease-in-out !important; /* 重新宣告動畫，加 !important */
+    animation: pulse-yellow-effect 3s infinite ease-in-out; /* <-- 拿忒 !important */
   }
 
 
@@ -773,7 +780,7 @@ span[data-varname].active-dialect-level {
     }
     #generated tr#nowPlaying.paused-playback {
       /* background-color: transparent !important; */
-      animation: pulse-dark-yellow-effect 3s infinite ease-in-out !important; /* 重新宣告暗夜動畫，加 !important */
+      animation: pulse-dark-yellow-effect 3s infinite ease-in-out; /* <-- 拿忒 !important */
     }
   }
 }
