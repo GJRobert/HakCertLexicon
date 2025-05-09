@@ -1939,10 +1939,18 @@ function 大埔高降異化() {
       } else {
         let nextWordToken = "";
         for (let j = i + 1; j < tokens.length; j++) {
-          if (!tokens[j].startsWith("<ruby class=\"sandhi-") && !tokens[j].match(/^\s+$/)) {
-            nextWordToken = tokens[j];
+          // Skip if it's an existing sandhi ruby or a space/punctuation (including '、')
+          if (tokens[j].startsWith("<ruby class=\"sandhi-") || tokens[j].match(/^[\s、]+$/)) {
+            continue;
+          }
+          // If we encounter an opening parenthesis, stop looking for next word for sandhi
+          if (tokens[j] === '(' || tokens[j] === '（') {
+            nextWordToken = ""; // No valid next word for sandhi across parenthesis
             break;
           }
+          // Otherwise, this is our next word token
+          nextWordToken = tokens[j];
+          break;
         }
 
         if (
@@ -2020,13 +2028,21 @@ function 大埔中遇低升() {
       } else {
         let nextWordToken = "";
         for (let j = i + 1; j < tokens.length; j++) {
-          if (!tokens[j].startsWith("<ruby class=\"sandhi-") && !tokens[j].match(/^\s+$/)) {
-            nextWordToken = tokens[j];
+          // Skip if it's an existing sandhi ruby or a space/punctuation (including '、')
+          if (tokens[j].startsWith("<ruby class=\"sandhi-") || tokens[j].match(/^[\s、]+$/)) {
+            continue;
+          }
+          // If we encounter an opening parenthesis, stop looking for next word for sandhi
+          if (tokens[j] === '(' || tokens[j] === '（') {
+            nextWordToken = ""; // No valid next word for sandhi across parenthesis
             break;
           }
+          // Otherwise, this is our next word token
+          nextWordToken = tokens[j];
+          break;
         }
 
-        if (
+        if ( // Restore the correct if condition here
           currentToken.length > 0 &&
           currentToken.match(/[\u0101\u0113\u012B\u014D\u016B]/) // ā ē ī ō ū
         ) {
