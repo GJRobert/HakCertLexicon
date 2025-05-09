@@ -169,7 +169,30 @@ function generate(content, initialCategory = null, targetRowId = null) {
   let 級 = '';
   腔 = content.name.substring(0, 1);
   級 = content.name.substring(1);
-  const 例外音檔 = eval(級 + '例外音檔'); // 保持 eval，雖然不推薦，但沿用現有邏輯
+  // const 例外音檔 = eval(級 + '例外音檔'); // 原本使用 eval 的方式
+
+  let selected例外音檔;
+  switch (級) {
+    case '基':
+      selected例外音檔 = typeof 基例外音檔 !== 'undefined' ? 基例外音檔 : [];
+      break;
+    case '初':
+      selected例外音檔 = typeof 初例外音檔 !== 'undefined' ? 初例外音檔 : [];
+      break;
+    case '中':
+      selected例外音檔 = typeof 中例外音檔 !== 'undefined' ? 中例外音檔 : [];
+      break;
+    case '中高':
+      selected例外音檔 = typeof 中高例外音檔 !== 'undefined' ? 中高例外音檔 : [];
+      break;
+    case '高':
+      selected例外音檔 = typeof 高例外音檔 !== 'undefined' ? 高例外音檔 : [];
+      break;
+    default:
+      console.error(`未知的級別簡稱: ${級}，無法載入例外音檔。`);
+      selected例外音檔 = []; // 若無對應，預設為空陣列
+  }
+  const 例外音檔 = selected例外音檔;
 
   var fullLvlName;
   const generalMediaYr = '112';
@@ -507,7 +530,8 @@ function buildTableAndSetupPlayback(
     // --- 內部建立 tr, td, audio, button 的邏輯基本不變 ---
     // --- 但需要使用傳入的 dialectInfo 物件來獲取變數 ---
     let mediaYr = dialectInfo.generalMediaYr;
-    let pre112Insertion = '';
+    let pre112Insertion詞 = '';
+    let pre112Insertion句 = '';
     let 句目錄級 = dialectInfo.目錄級;
     let mediaNo = ''; // 在迴圈內計算
 
@@ -536,8 +560,11 @@ function buildTableAndSetupPlayback(
       console.log(`編號 ${line.編號} 符合例外音檔`);
       mediaYr = matchedElement[1];
       mediaNo = matchedElement[2]; // 例外 mediaNo 在此賦值
-      pre112Insertion = 's/';
-      句目錄級 = dialectInfo.目錄另級;
+      pre112Insertion詞 = 'w/';
+      pre112Insertion句 = 's/';
+      if (dialectInfo.目錄另級 !== undefined) { // 只在目錄另級有定義時才更新句目錄級
+        句目錄級 = dialectInfo.目錄另級;
+      }
     }
 
     const 詞目錄 =
@@ -545,6 +572,7 @@ function buildTableAndSetupPlayback(
       '/' +
       dialectInfo.檔腔 +
       '/' +
+      pre112Insertion詞 +
       dialectInfo.檔級 +
       dialectInfo.檔腔;
     const 句目錄 =
@@ -552,7 +580,7 @@ function buildTableAndSetupPlayback(
       '/' +
       dialectInfo.檔腔 +
       '/' +
-      pre112Insertion +
+      pre112Insertion句 +
       dialectInfo.檔級 +
       dialectInfo.檔腔;
 
@@ -602,7 +630,7 @@ function buildTableAndSetupPlayback(
     audio1.preload = 'none';
     const source1 = document.createElement('source');
     // *** 注意路徑組合 ***
-    source1.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${dialectInfo.generalMediaYr}/${詞目錄}-${no[0]}-${no[1]}.mp3`;
+    source1.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${詞目錄}-${no[0]}-${mediaNo}.mp3`; // 使用 mediaYr 和 mediaNo
     source1.type = 'audio/mpeg';
     audio1.appendChild(source1);
     td2.appendChild(audio1);
