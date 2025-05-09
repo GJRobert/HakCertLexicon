@@ -1903,56 +1903,89 @@ function 大埔高降異化() {
   const rtElements = document.querySelectorAll('rt');
 
   rtElements.forEach((rt) => {
-    let text = rt.textContent;
-    let words = text.split(/(\s+)/);
-    let modifiedWords = [];
+    let htmlContent = rt.innerHTML;
+    const sandhiRubyRegex = /<ruby class="sandhi-(?:高降變|中平變|低升變)"[^>]*>.*?<\/ruby>/g;
+    // Split by the sandhiRubyRegex and then re-split the non-matching parts
+    let preliminaryTokens = [];
+    let lastIndex = 0;
+    htmlContent.replace(sandhiRubyRegex, (match, offset) => {
+      if (offset > lastIndex) {
+        preliminaryTokens.push(htmlContent.substring(lastIndex, offset));
+      }
+      preliminaryTokens.push(match);
+      lastIndex = offset + match.length;
+      return match; // Required by replace, but we don't use its return value here
+    });
+    if (lastIndex < htmlContent.length) {
+      preliminaryTokens.push(htmlContent.substring(lastIndex));
+    }
 
-    for (let i = 0; i < words.length; i++) {
-      if (
-        words[i].length > 0 &&
-        words[i].match(/[\u00E0\u00E8\u00EC\u00F2\u00F9]/)
-      ) {
-        // 若前字為 à è ì ò ù
-        // 檢查下一個單字是否也包含 à è ì ò ù 或 â ê î ô û
+    const tokens = preliminaryTokens.flatMap(token => {
+      if (token.startsWith("<ruby class=\"sandhi-")) {
+        return [token]; // This is already a complete sandhi ruby token
+      }
+      // Otherwise, it's a segment that needs further splitting into words and spaces
+      return token.match(/[^<>\s、]+|[\s、]+/g) || []; // 將頓號「、」視為分隔符
+    }).filter(t => t && t.length > 0); // Filter out empty strings
+
+    let modifiedTokens = [];
+    let hasActualModification = false;
+
+    for (let i = 0; i < tokens.length; i++) {
+      let currentToken = tokens[i];
+
+      if (currentToken.startsWith("<ruby class=\"sandhi-") || currentToken.match(/^\s+$/)) {
+        modifiedTokens.push(currentToken);
+      } else {
+        let nextWordToken = "";
+        for (let j = i + 1; j < tokens.length; j++) {
+          // Skip if it's an existing sandhi ruby or a space/punctuation (including '、')
+          if (tokens[j].startsWith("<ruby class=\"sandhi-") || tokens[j].match(/^[\s、]+$/)) {
+            continue;
+          }
+          // If we encounter an opening parenthesis, stop looking for next word for sandhi
+          if (tokens[j] === '(' || tokens[j] === '（') {
+            nextWordToken = ""; // No valid next word for sandhi across parenthesis
+            break;
+          }
+          // Otherwise, this is our next word token
+          nextWordToken = tokens[j];
+          break;
+        }
+
         if (
-          i + 2 < words.length &&
-          words[i + 2].match(
-            /[\u00E0\u00E8\u00EC\u00F2\u00F9\u00E2\u00EA\u00EE\u00F4\u00FB]/
-          )
+          currentToken.length > 0 &&
+          currentToken.match(/[\u00E0\u00E8\u00EC\u00F2\u00F9]/) // à è ì ò ù
         ) {
-          // 檢查 A 單字是否含有右括號，或 B 單字是否含有左括號
-          if (words[i].includes(')') || words[i + 2].includes('(')) {
-            // 如果含有括號，則直接加入 A 單字
-            modifiedWords.push(words[i]);
+          if (
+            nextWordToken &&
+            nextWordToken.match(
+              /[\u00E0\u00E8\u00EC\u00F2\u00F9\u00E2\u00EA\u00EE\u00F4\u00FB]/ // à è ì ò ù or â ê î ô û
+            )
+          ) {
+            if (currentToken.includes(')') || currentToken.includes('）') || nextWordToken.includes('(') || nextWordToken.includes('（')) {
+              modifiedTokens.push(currentToken);
+            } else {
+              let rubyElement = document.createElement('ruby');
+              rubyElement.className = 'sandhi-高降變';
+              rubyElement.textContent = currentToken;
+              let rtInnerElement = document.createElement('rt'); // Renamed to avoid conflict
+              rtInnerElement.textContent = '55';
+              rubyElement.appendChild(rtInnerElement);
+              modifiedTokens.push(rubyElement.outerHTML);
+              hasActualModification = true;
+            }
           } else {
-            // 如果沒有括號，則將 A 單字放在 <ruby> 裡
-            let rubyElement = document.createElement('ruby');
-            rubyElement.className = 'sandhi';
-            rubyElement.classList.add('高降變');
-            rubyElement.textContent = words[i];
-            let rtElement = document.createElement('rt');
-            rtElement.textContent = '55';
-            rubyElement.appendChild(rtElement);
-            modifiedWords.push(rubyElement.outerHTML);
+            modifiedTokens.push(currentToken);
           }
         } else {
-          // 如果下一個單字不包含特殊字元，則直接加入 A 單字
-          modifiedWords.push(words[i]);
+          modifiedTokens.push(currentToken);
         }
-      } else {
-        modifiedWords.push(words[i]);
       }
     }
 
-    let newText = modifiedWords.join('');
-
-    if (newText !== text) {
-      let tempDiv = document.createElement('div');
-      tempDiv.innerHTML = newText;
-      rt.innerHTML = ''; // 清空 rt 內容
-      while (tempDiv.firstChild) {
-        rt.appendChild(tempDiv.firstChild);
-      }
+    if (hasActualModification) {
+      rt.innerHTML = modifiedTokens.join('');
     }
   });
 }
@@ -1961,56 +1994,87 @@ function 大埔中遇低升() {
   const rtElements = document.querySelectorAll('rt');
 
   rtElements.forEach((rt) => {
-    let text = rt.textContent;
-    let words = text.split(/(\s+)/);
-    let modifiedWords = [];
+    let htmlContent = rt.innerHTML;
+    const sandhiRubyRegex = /<ruby class="sandhi-(?:高降變|中平變|低升變)"[^>]*>.*?<\/ruby>/g;
+    let preliminaryTokens = [];
+    let lastIndex = 0;
+    htmlContent.replace(sandhiRubyRegex, (match, offset) => {
+      if (offset > lastIndex) {
+        preliminaryTokens.push(htmlContent.substring(lastIndex, offset));
+      }
+      preliminaryTokens.push(match);
+      lastIndex = offset + match.length;
+      return match;
+    });
+    if (lastIndex < htmlContent.length) {
+      preliminaryTokens.push(htmlContent.substring(lastIndex));
+    }
 
-    for (let i = 0; i < words.length; i++) {
-      if (
-        words[i].length > 0 &&
-        words[i].match(/[\u0101\u0113\u012B\u014D\u016B]/)
-      ) {
-        // 若前字為 ā ē ī ō ū
-        // 檢查下一個單字是否也包含 ǎ ě ǐ ǒ ǔ 或 â ê î ô û
-        if (
-          i + 2 < words.length &&
-          words[i + 2].match(
-            /[\u01CE\u011B\u01D0\u01D2\u01D4\u00E2\u00EA\u00EE\u00F4\u00FB]/
-          )
+    const tokens = preliminaryTokens.flatMap(token => {
+      if (token.startsWith("<ruby class=\"sandhi-")) {
+        return [token];
+      }
+      return token.match(/[^<>\s、]+|[\s、]+/g) || []; // 將頓號「、」視為分隔符
+    }).filter(t => t && t.length > 0);
+
+    let modifiedTokens = [];
+    let hasActualModification = false;
+
+    for (let i = 0; i < tokens.length; i++) {
+      let currentToken = tokens[i];
+
+      if (currentToken.startsWith("<ruby class=\"sandhi-") || currentToken.match(/^\s+$/)) {
+        modifiedTokens.push(currentToken);
+      } else {
+        let nextWordToken = "";
+        for (let j = i + 1; j < tokens.length; j++) {
+          // Skip if it's an existing sandhi ruby or a space/punctuation (including '、')
+          if (tokens[j].startsWith("<ruby class=\"sandhi-") || tokens[j].match(/^[\s、]+$/)) {
+            continue;
+          }
+          // If we encounter an opening parenthesis, stop looking for next word for sandhi
+          if (tokens[j] === '(' || tokens[j] === '（') {
+            nextWordToken = ""; // No valid next word for sandhi across parenthesis
+            break;
+          }
+          // Otherwise, this is our next word token
+          nextWordToken = tokens[j];
+          break;
+        }
+
+        if ( // Restore the correct if condition here
+          currentToken.length > 0 &&
+          currentToken.match(/[\u0101\u0113\u012B\u014D\u016B]/) // ā ē ī ō ū
         ) {
-          // 檢查 A 單字是否含有右括號，或 B 單字是否含有左括號
-          if (words[i].includes(')') || words[i + 2].includes('(')) {
-            // 如果含有括號，則直接加入 A 單字
-            modifiedWords.push(words[i]);
+          if (
+            nextWordToken &&
+            nextWordToken.match(
+              /[\u01CE\u011B\u01D0\u01D2\u01D4\u00E2\u00EA\u00EE\u00F4\u00FB]/ // ǎ ě ǐ ǒ ǔ or â ê î ô û
+            )
+          ) {
+            if (currentToken.includes(')') || currentToken.includes('）') || nextWordToken.includes('(') || nextWordToken.includes('（')) {
+              modifiedTokens.push(currentToken);
+            } else {
+              let rubyElement = document.createElement('ruby');
+              rubyElement.className = 'sandhi-中平變';
+              rubyElement.textContent = currentToken;
+              let rtInnerElement = document.createElement('rt');
+              rtInnerElement.textContent = '35';
+              rubyElement.appendChild(rtInnerElement);
+              modifiedTokens.push(rubyElement.outerHTML);
+              hasActualModification = true;
+            }
           } else {
-            // 如果沒有括號，則將 A 單字放在 <ruby> 裡
-            let rubyElement = document.createElement('ruby');
-            rubyElement.className = 'sandhi';
-            rubyElement.classList.add('中平變');
-            rubyElement.textContent = words[i];
-            let rtElement = document.createElement('rt');
-            rtElement.textContent = '35';
-            rubyElement.appendChild(rtElement);
-            modifiedWords.push(rubyElement.outerHTML);
+            modifiedTokens.push(currentToken);
           }
         } else {
-          // 如果下一個單字不包含特殊字元，則直接加入 A 單字
-          modifiedWords.push(words[i]);
+          modifiedTokens.push(currentToken);
         }
-      } else {
-        modifiedWords.push(words[i]);
       }
     }
 
-    let newText = modifiedWords.join('');
-
-    if (newText !== text) {
-      let tempDiv = document.createElement('div');
-      tempDiv.innerHTML = newText;
-      rt.innerHTML = ''; // 清空 rt 內容
-      while (tempDiv.firstChild) {
-        rt.appendChild(tempDiv.firstChild);
-      }
+    if (hasActualModification) {
+      rt.innerHTML = modifiedTokens.join('');
     }
   });
 }
@@ -2019,54 +2083,85 @@ function 大埔低升異化() {
   const rtElements = document.querySelectorAll('rt');
 
   rtElements.forEach((rt) => {
-    let text = rt.textContent;
-    let words = text.split(/(\s+)/);
-    let modifiedWords = [];
+    let htmlContent = rt.innerHTML;
+    const sandhiRubyRegex = /<ruby class="sandhi-(?:高降變|中平變|低升變)"[^>]*>.*?<\/ruby>/g;
+    let preliminaryTokens = [];
+    let lastIndex = 0;
+    htmlContent.replace(sandhiRubyRegex, (match, offset) => {
+      if (offset > lastIndex) {
+        preliminaryTokens.push(htmlContent.substring(lastIndex, offset));
+      }
+      preliminaryTokens.push(match);
+      lastIndex = offset + match.length;
+      return match;
+    });
+    if (lastIndex < htmlContent.length) {
+      preliminaryTokens.push(htmlContent.substring(lastIndex));
+    }
 
-    for (let i = 0; i < words.length; i++) {
-      if (
-        words[i].length > 0 &&
-        words[i].match(/[\u01CE\u011B\u01D0\u01D2\u01D4]/)
-      ) {
-        // 若前字為 ǎ ě ǐ ǒ ǔ
-        // 檢查下一個單字是否也包含 ǎ ě ǐ ǒ ǔ
+    const tokens = preliminaryTokens.flatMap(token => {
+      if (token.startsWith("<ruby class=\"sandhi-")) {
+        return [token];
+      }
+      return token.match(/[^<>\s、]+|[\s、]+/g) || []; // 將頓號「、」視為分隔符
+    }).filter(t => t && t.length > 0);
+
+    let modifiedTokens = [];
+    let hasActualModification = false;
+
+    for (let i = 0; i < tokens.length; i++) {
+      let currentToken = tokens[i];
+
+      if (currentToken.startsWith("<ruby class=\"sandhi-") || currentToken.match(/^\s+$/)) {
+        modifiedTokens.push(currentToken);
+      } else {
+        let nextWordToken = "";
+        for (let j = i + 1; j < tokens.length; j++) {
+          // Skip if it's an existing sandhi ruby or a space/punctuation
+          if (tokens[j].startsWith("<ruby class=\"sandhi-") || tokens[j].match(/^[\s、]+$/)) {
+            continue;
+          }
+          // If we encounter an opening parenthesis, stop looking for next word for sandhi
+          if (tokens[j] === '(' || tokens[j] === '（') {
+            nextWordToken = ""; // No valid next word for sandhi across parenthesis
+            break;
+          }
+          // Otherwise, this is our next word token
+          nextWordToken = tokens[j];
+          break;
+        }
+
         if (
-          i + 2 < words.length &&
-          words[i + 2].match(/[\u01CE\u011B\u01D0\u01D2\u01D4]/)
+          currentToken.length > 0 &&
+          currentToken.match(/[\u01CE\u011B\u01D0\u01D2\u01D4]/) // ǎ ě ǐ ǒ ǔ
         ) {
-          // 檢查 A 單字是否含有右括號，或 B 單字是否含有左括號
-          if (words[i].includes(')') || words[i + 2].includes('(')) {
-            // 如果含有括號，則直接加入 A 單字
-            modifiedWords.push(words[i]);
+          if (
+            nextWordToken &&
+            nextWordToken.match(/[\u01CE\u011B\u01D0\u01D2\u01D4]/) // ǎ ě ǐ ǒ ǔ
+          ) {
+            if (currentToken.includes(')') || currentToken.includes('）') || nextWordToken.includes('(') || nextWordToken.includes('（')) {
+              modifiedTokens.push(currentToken);
+            } else {
+              let rubyElement = document.createElement('ruby');
+              rubyElement.className = 'sandhi-低升變'; // 使用單一 class 名稱
+              rubyElement.textContent = currentToken;
+              let rtElement = document.createElement('rt');
+              rtElement.textContent = '33';
+              rubyElement.appendChild(rtElement);
+              modifiedTokens.push(rubyElement.outerHTML);
+              hasActualModification = true;
+            }
           } else {
-            // 如果沒有括號，則將 A 單字放在 <ruby> 裡
-            let rubyElement = document.createElement('ruby');
-            rubyElement.className = 'sandhi';
-            rubyElement.classList.add('低升變');
-            rubyElement.textContent = words[i];
-            let rtElement = document.createElement('rt');
-            rtElement.textContent = '33';
-            rubyElement.appendChild(rtElement);
-            modifiedWords.push(rubyElement.outerHTML);
+            modifiedTokens.push(currentToken);
           }
         } else {
-          // 如果下一個單字不包含特殊字元，則直接加入 A 單字
-          modifiedWords.push(words[i]);
+          modifiedTokens.push(currentToken);
         }
-      } else {
-        modifiedWords.push(words[i]);
       }
     }
 
-    let newText = modifiedWords.join('');
-
-    if (newText !== text) {
-      let tempDiv = document.createElement('div');
-      tempDiv.innerHTML = newText;
-      rt.innerHTML = ''; // 清空 rt 內容
-      while (tempDiv.firstChild) {
-        rt.appendChild(tempDiv.firstChild);
-      }
+    if (hasActualModification) {
+      rt.innerHTML = modifiedTokens.join('');
     }
   });
 }
