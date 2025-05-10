@@ -724,9 +724,10 @@ function buildTableAndSetupPlayback(
   }
 
   console.log('Table generated, calling handleResizeActions initially.'); // 加一條 log
-  handleResizeActions(); // 產生表格後黏時先做一擺調整 ruby 字體大細
+  // 產生表格後黏時先做一擺調整 ruby 字體大細
+  // 使用 setTimeout 確保 DOM 渲染完成後再執行，以便獲取正確的元素尺寸
+  setTimeout(() => handleResizeActions(), 50); // 延遲 50 毫秒，分瀏覽器時間處理版面
 
-  // --- 將原本在 generate 內部 radio change listener 中的播放/書籤設定邏輯搬移至此 ---
   // --- 並將其包裝以便重複使用和觸發 ---
 
   const audioElements = audioElementsList; // 使用收集到的元素 (保持局部，因為每個類別不同)
@@ -1385,9 +1386,8 @@ function buildTableAndSetupPlayback(
     }
     // --- 新增結束 ---
 
-    // --- 新增：在 Firefox 中調整 Ruby 字體大小 ---
-    adjustAllRubyFontSizes(contentContainer);
-    // --- 新增結束 ---
+    // Firefox 中 Ruby 字體大小的調整已由上方延遲呼叫的 handleResizeActions() 處理，
+    // 這邊毋使再重複呼叫，避免用著無準个尺寸。
   } // --- autoPlayTargetRowId 處理結束 ---
 
   // --- 在函式最尾項，確保 DOM 都更新後 ---
