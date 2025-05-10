@@ -180,9 +180,9 @@ a {
   height: 1em;
   border-radius: 1em;
 }
-audio {
+/* audio {
   max-width: 5em;
-}
+}*//* 同狹螢幕做成卡片以後就毋使吔，td 差毋多都有罅闊 */
 .no {
   font-family: 'Operator Mono';
 }

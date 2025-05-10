@@ -532,6 +532,7 @@ function buildTableAndSetupPlayback(
     let mediaYr = dialectInfo.generalMediaYr;
     let pre112Insertion詞 = '';
     let pre112Insertion句 = '';
+    let 詞目錄級 = dialectInfo.目錄級;
     let 句目錄級 = dialectInfo.目錄級;
     let mediaNo = ''; // 在迴圈內計算
 
@@ -563,12 +564,13 @@ function buildTableAndSetupPlayback(
       pre112Insertion詞 = 'w/';
       pre112Insertion句 = 's/';
       if (dialectInfo.目錄另級 !== undefined) { // 只在目錄另級有定義時才更新句目錄級
+        詞目錄級 = dialectInfo.目錄另級; // GHSRobert：自家加个
         句目錄級 = dialectInfo.目錄另級;
       }
     }
 
     const 詞目錄 =
-      dialectInfo.目錄級 +
+      詞目錄級 +
       '/' +
       dialectInfo.檔腔 +
       '/' +
