@@ -632,7 +632,15 @@ function buildTableAndSetupPlayback(
     audio1.preload = 'none';
     const source1 = document.createElement('source');
     // *** 注意路徑組合 ***
-    source1.src = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${詞目錄}-${no[0]}-${mediaNo}.mp3`; // 使用 mediaYr 和 mediaNo
+    let wordAudioSrc = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${詞目錄}-${no[0]}-${mediaNo}.mp3`;
+    if (dialectInfo.fullLvlName === '海陸中高級' && line.編號 === '4-261') {
+      wordAudioSrc =
+        'https://elearning.hakka.gov.tw/hakka/files/dictionaries/3/hk0000014571/hk0000014571-1-2.mp3';
+      console.log(
+        `[main.js OVERRIDE] Using special URL for 海陸中高級 4-261 詞彙: ${wordAudioSrc}`
+      );
+    }
+    source1.src = wordAudioSrc;
     source1.type = 'audio/mpeg';
     audio1.appendChild(source1);
     td2.appendChild(audio1);
@@ -676,6 +684,23 @@ function buildTableAndSetupPlayback(
         dummyAudioForAdvanced.style.display = 'none'; // 確保隱藏
         td3.appendChild(dummyAudioForAdvanced);
         audioElementsList.push(dummyAudioForAdvanced); // 收集假音檔
+      } else if (dialectInfo.fullLvlName === '海陸中高級' && line.編號 === '4-261') {
+        // 特定已知無例句音檔个情況
+/* GHSRobert：Gemini 這段是用來做假音檔个，無愛
+        const dummyAudioMissing = document.createElement('audio');
+        dummyAudioMissing.className = 'media';
+        dummyAudioMissing.dataset.skip = 'true';
+        dummyAudioMissing.controls = false;
+        dummyAudioMissing.preload = 'none';
+        dummyAudioMissing.style.display = 'none';
+        td3.appendChild(dummyAudioMissing);
+        audioElementsList.push(dummyAudioMissing);
+*/
+        const noAudioMsg = document.createElement('span');
+        noAudioMsg.textContent = '（無例句音檔，敗勢）';
+        noAudioMsg.style.color = 'magenta'; // 或者用 CSS class 來設定樣式
+        // noAudioMsg.style.fontSize = '0.9em';
+        td3.appendChild(noAudioMsg); // Gemini：加在例句文字後 ← GHSRobert：無愛，忒低調吔，應該自家一行
       } else {
         // 非「高級」級別：若有例句文字，則加入實際个 audio2
         const audio2 = document.createElement('audio');
@@ -847,6 +872,8 @@ function buildTableAndSetupPlayback(
 
     // 使用當前類別的音檔列表
     currentAudio = currentCategoryAudioElements[index];
+    const sourceUrlForErrorLog = currentAudio.src; // 在 play 前擷取 src，避免 currentAudio 之後變 null
+
     if (currentAudio.dataset.skip === 'true') {
       console.log('Skipping audio index:', index);
       currentAudioIndex++;
@@ -863,6 +890,15 @@ function buildTableAndSetupPlayback(
         currentAudio.addEventListener('ended', handleAudioEnded, {
           once: true,
         });
+
+        isPlaying = true; // 確保成功播放時設定狀態
+        isPaused = false;
+        const pauseResumeButton = document.getElementById('pauseResumeBtn');
+        if (pauseResumeButton) {
+          pauseResumeButton.innerHTML = '<i class="fas fa-pause"></i>';
+          pauseResumeButton.classList.remove('ended');
+          pauseResumeButton.classList.add('ongoing');
+        }
 
         // 尋找 audio 元素个父層 tr 同 td
         const rowElement = currentAudio.closest('tr');
@@ -913,13 +949,24 @@ function buildTableAndSetupPlayback(
         }
       })
       .catch((error) => {
+        // 使用先前儲存的 sourceUrlForErrorLog，避免 currentAudio 變 null 時出錯
         console.error(
-          `播放音訊失敗 (索引 ${index}, src: ${currentAudio.src}):`,
+          `播放音訊失敗 (索引 ${index}, src: ${sourceUrlForErrorLog}): ${error.name} - ${error.message}`,
           error
         );
         // 播放失敗，自動跳到下一個
         currentAudioIndex++;
         playAudio(currentAudioIndex);
+
+        // 只有在 isPlaying 係 true，而且出錯个音檔確實係目前个 currentAudio 時，正繼續播放下一個
+        // 這樣做得避免在使用者按下停止鈕後，舊个錯誤訊息又意外觸發新个播放
+        if (isPlaying && currentAudio === currentCategoryAudioElements[index]) {
+          console.log(`[main.js DEBUG] Error playing ${sourceUrlForErrorLog}. Advancing to next audio.`);
+          currentAudioIndex++;
+          playAudio(currentAudioIndex);
+        } else {
+          console.log(`[main.js DEBUG] Error playing ${sourceUrlForErrorLog}, but playback state is no longer active for this audio (isPlaying: ${isPlaying}, currentAudio.src: ${currentAudio ? currentAudio.src : 'null'}, expected index: ${index}). Not advancing from this catch.`);
+        }
       });
   }
   function handleAudioEnded() {
