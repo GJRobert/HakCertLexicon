@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>客語認證詞彙無效音檔檢查器</title>
+    <!-- 載入所有詞彙資料 JS 檔案 -->
+    <script src="113四基.js"></script>
+    <script src="113四初.js"></script>
+    <script src="113四中.js"></script>
+    <script src="113四中高.js"></script>
+    <script src="113四高.js"></script>
+    <script src="113海基.js"></script>
+    <script src="113海初.js"></script>
+    <script src="113海中.js"></script>
+    <script src="113海中高.js"></script>
+    <script src="113大基.js"></script>
+    <script src="113大初.js"></script>
+    <script src="113大中.js"></script>
+    <script src="113平基.js"></script>
+    <script src="113安基.js"></script>
+    <!-- 載入例外音檔設定 -->
+    <script src="exclusions.js"></script>
+    <style>
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        h1 { color: #333; }
+        p { color: #555; }
+        button {
+            background-color: #007bff; color: white; border: none;
+            padding: 10px 15px; font-size: 16px; border-radius: 5px;
+            cursor: pointer; transition: background-color 0.3s ease;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        #status { margin-top: 15px; font-weight: bold; }
+        #results {
+            margin-top: 15px; border: 1px solid #ddd; padding: 15px;
+            height: 500px; overflow-y: scroll; white-space: pre-wrap;
+            font-family: "Courier New", Courier, monospace; font-size: 14px;
+            background-color: #f9f9f9; border-radius: 5px;
+        }
+        .error { color: #dc3545; }
+        .info { color: #007bff; }
+        .success { color: #28a745; }
+        .item-info { margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>客語認證詞彙無效音檔檢查器</h1>
+    <p>這支工具會檢查所有腔調、級別、類別詞彙的音檔，看敢有失效 (例如 404 錯誤) 或因 CORS 設定而無法存取的連結。</p>
+    <p><strong>注意：</strong>檢查過程可能會花兜時間，請耐心等待。結果會顯示在下方。</p>
+    <button id="startButton">開始檢查</button>
+    <div id="status">狀態：還未開始</div>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const statusDiv = document.getElementById('status');
+        const startButton = document.getElementById('startButton');
+
+        // 從 index.html 整理出來的腔調級別資料
+        const DIALECT_LEVELS = [
+            { name: "四縣基礎級", varName: "四基", data: typeof 四基 !== 'undefined' ? 四基 : null },
+            { name: "四縣初級",   varName: "四初", data: typeof 四初 !== 'undefined' ? 四初 : null },
+            { name: "四縣中級",   varName: "四中", data: typeof 四中 !== 'undefined' ? 四中 : null },
+            { name: "四縣中高級", varName: "四中高", data: typeof 四中高 !== 'undefined' ? 四中高 : null },
+            { name: "四縣高級",   varName: "四高", data: typeof 四高 !== 'undefined' ? 四高 : null },
+            { name: "海陸基礎級", varName: "海基", data: typeof 海基 !== 'undefined' ? 海基 : null },
+            { name: "海陸初級",   varName: "海初", data: typeof 海初 !== 'undefined' ? 海初 : null },
+            { name: "海陸中級",   varName: "海中", data: typeof 海中 !== 'undefined' ? 海中 : null },
+            { name: "海陸中高級", varName: "海中高", data: typeof 海中高 !== 'undefined' ? 海中高 : null },
+            { name: "大埔基礎級", varName: "大基", data: typeof 大基 !== 'undefined' ? 大基 : null },
+            { name: "大埔初級",   varName: "大初", data: typeof 大初 !== 'undefined' ? 大初 : null },
+            { name: "大埔中級",   varName: "大中", data: typeof 大中 !== 'undefined' ? 大中 : null },
+            { name: "饒平基礎級", varName: "平基", data: typeof 平基 !== 'undefined' ? 平基 : null },
+            { name: "詔安基礎級", varName: "安基", data: typeof 安基 !== 'undefined' ? 安基 : null }
+        ];
+
+        // 從 index.html 整理出來的分類
+        const CATEGORIES = [
+            "人體與醫療", "心理活動與感覺", "代詞", "外在活動與動作", "生物",
+            "自然與景觀", "事物狀態與變化", "居家生活", "抽象概念與形容",
+            "法律、政治與軍事", "社會關係與行為", "時空與情狀副詞", "特殊詞類",
+            "通訊、建設與交通", "歲時祭儀、習俗與宗教", "數詞量詞", "職業與經濟", "藝文與教育"
+        ];
+
+        function csvToArray(str, delimiter = ',') {
+            const rows = str.trim().split('\n');
+            if (rows.length < 1) return [];
+            
+            // 處理 CSV 檔頭可能存在的 UTF-8 BOM 字元
+            const firstRow = rows[0].charCodeAt(0) === 0xFEFF ? rows[0].substring(1) : rows[0];
+            const headers = firstRow.split(delimiter).map(h => h.trim());
+            
+            const data = [];
+            for (let i = 1; i < rows.length; i++) {
+                if (rows[i].trim() === '') continue;
+                const values = rows[i].split(delimiter);
+                const obj = {};
+                let hasValue = false;
+                for (let j = 0; j < headers.length; j++) {
+                    const value = values[j] ? values[j].trim() : '';
+                    obj[headers[j]] = value;
+                    if (value) hasValue = true;
+                }
+                // 確保該行至少有一個 header 有值，且第一個 header (通常是編號) 存在
+                if (hasValue && obj[headers[0]]) {
+                     data.push(obj);
+                }
+            }
+            return data;
+        }
+
+        function constructDialectInfo(fullLvlName, varNameShort) {
+            let 腔 = varNameShort.substring(0, 1);
+            let 級 = varNameShort.substring(1);
+
+            let selected例外音檔;
+            switch (級) {
+                case '基': selected例外音檔 = typeof 基例外音檔 !== 'undefined' ? 基例外音檔 : []; break;
+                case '初': selected例外音檔 = typeof 初例外音檔 !== 'undefined' ? 初例外音檔 : []; break;
+                case '中': selected例外音檔 = typeof 中例外音檔 !== 'undefined' ? 中例外音檔 : []; break;
+                case '中高': selected例外音檔 = typeof 中高例外音檔 !== 'undefined' ? 中高例外音檔 : []; break;
+                case '高': selected例外音檔 = typeof 高例外音檔 !== 'undefined' ? 高例外音檔 : []; break;
+                default:
+                    logMessage(`建構 dialectInfo 失敗：未知的級別簡稱 "${級}" 來自 ${varNameShort}`, 'error');
+                    selected例外音檔 = [];
+            }
+
+            const info = {
+                腔: 腔,
+                級: 級,
+                例外音檔: selected例外音檔,
+                fullLvlName: fullLvlName,
+                generalMediaYr: '112',
+                腔名: '', 級名: '', 檔腔: '', 檔級: '', 目錄級: '', 目錄另級: undefined
+            };
+
+            switch (腔) {
+                case '四': info.檔腔 = 'si'; info.腔名 = '四縣'; break;
+                case '海': info.檔腔 = 'ha'; info.腔名 = '海陸'; break;
+                case '大': info.檔腔 = 'da'; info.腔名 = '大埔'; break;
+                case '平': info.檔腔 = 'rh'; info.腔名 = '饒平'; break;
+                case '安': info.檔腔 = 'zh'; info.腔名 = '詔安'; break;
+                default:
+                    logMessage(`建構 dialectInfo 失敗：未知的腔調簡稱 "${腔}" 來自 ${varNameShort}`, 'error');
+                    return null;
+            }
+
+            switch (級) {
+                case '基': info.目錄級 = '5'; info.目錄另級 = '1'; info.級名 = '基礎級'; info.檔級 = ''; break;
+                case '初': info.目錄級 = '1'; info.級名 = '初級'; info.檔級 = ''; break;
+                case '中': info.目錄級 = '2'; info.檔級 = '1'; info.級名 = '中級'; break;
+                case '中高': info.目錄級 = '3'; info.檔級 = '2'; info.級名 = '中高級'; break;
+                case '高': info.目錄級 = '4'; info.檔級 = '3'; info.級名 = '高級'; break;
+                default:
+                    logMessage(`建構 dialectInfo 失敗：未知的級別簡稱 "${級}" 來自 ${varNameShort} (第二次檢查)`, 'error');
+                    return null;
+            }
+            return info;
+        }
+
+        function getAudioFilePaths(line, dialectInfo) {
+            let mediaYr = dialectInfo.generalMediaYr;
+            let pre112Insertion詞 = '';
+            let pre112Insertion句 = '';
+            let 詞目錄級 = dialectInfo.目錄級;
+            let 句目錄級 = dialectInfo.目錄級;
+            let mediaNo = '';
+
+            if (!line.編號) {
+                // logMessage(`項目缺少「編號」欄位: ${JSON.stringify(line)}`, 'error');
+                return { wordAudioUrl: null, sentenceAudioUrl: null };
+            }
+
+            var no = line.編號.split('-');
+            if (no.length < 2) {
+                 // logMessage(`項目「編號」格式錯誤 (${line.編號}): ${JSON.stringify(line)}`, 'error');
+                 return { wordAudioUrl: null, sentenceAudioUrl: null };
+            }
+
+            if (parseInt(no[0], 10) <= 9) no[0] = '0' + parseInt(no[0], 10);
+            if (dialectInfo.級 === '初' && parseInt(no[0], 10) <= 99) { // 初級的 no[0] 可能到兩位數
+                 if (parseInt(no[0], 10) <=9) no[0] = '0' + no[0]; // 確保兩位數
+                 else no[0] = String(parseInt(no[0],10)); // 已經兩位數
+            } else if (dialectInfo.級 === '初') { // 初級特殊處理，若大於99則不補0
+                 no[0] = String(parseInt(no[0],10));
+            }
+
+
+            let no1_num = parseInt(no[1], 10);
+            if (no1_num <= 9) mediaNo = '00' + no1_num;
+            else if (no1_num <= 99) mediaNo = '0' + no1_num;
+            else mediaNo = String(no1_num);
+
+
+            const index = dialectInfo.例外音檔.findIndex(([編號]) => 編號 === line.編號);
+            if (index !== -1) {
+                const matchedElement = dialectInfo.例外音檔[index];
+                mediaYr = matchedElement[1];
+                mediaNo = matchedElement[2]; // 例外 mediaNo 格式已正確
+                pre112Insertion詞 = 'w/';
+                pre112Insertion句 = 's/';
+                if (dialectInfo.目錄另級 !== undefined) {
+                    詞目錄級 = dialectInfo.目錄另級;
+                    句目錄級 = dialectInfo.目錄另級;
+                }
+            }
+
+            const 詞目錄 = 詞目錄級 + '/' + dialectInfo.檔腔 + '/' + pre112Insertion詞 + dialectInfo.檔級 + dialectInfo.檔腔;
+            const 句目錄 = 句目錄級 + '/' + dialectInfo.檔腔 + '/' + pre112Insertion句 + dialectInfo.檔級 + dialectInfo.檔腔;
+
+            const wordAudioUrl = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${詞目錄}-${no[0]}-${mediaNo}.mp3`;
+            let sentenceAudioUrl = null;
+
+            const hasExampleSentenceText = line.例句 && line.例句.trim() !== '';
+            if (hasExampleSentenceText && dialectInfo.級名 !== '高級') {
+                sentenceAudioUrl = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${句目錄}-${no[0]}-${mediaNo}s.mp3`;
+            }
+
+            return { wordAudioUrl, sentenceAudioUrl };
+        }
+
+        function checkAudioUrlExists(url) {
+            return new Promise((resolve) => {
+                const audio = new Audio();
+                let timeoutId;
+
+                const onError = () => {
+                    cleanup();
+                    resolve(true); // 錯誤 (404, CORS, etc.)
+                };
+                const onCanPlay = () => {
+                    cleanup();
+                    resolve(false); // 音檔可播放 (或至少中介資料已載入)
+                };
+                const onTimeout = () => {
+                    cleanup();
+                    logMessage(`  檢查超時: ${url}`, 'error');
+                    resolve(true); // 超時當作錯誤
+                };
+
+                function cleanup() {
+                    clearTimeout(timeoutId);
+                    audio.removeEventListener('error', onError);
+                    audio.removeEventListener('canplaythrough', onCanPlay);
+                    audio.removeEventListener('loadeddata', onCanPlay);
+                    audio.src = ''; // 釋放資源
+                }
+
+                timeoutId = setTimeout(onTimeout, 7000); // 7 秒超時
+
+                audio.addEventListener('error', onError, { once: true });
+                audio.addEventListener('loadeddata', onCanPlay, { once: true });
+                
+                audio.src = url;
+            });
+        }
+
+        async function checkAndLogAudio(url, dialectFull, category, itemId, itemHakka, urlType) {
+            const isError = await checkAudioUrlExists(url);
+            if (isError) {
+                logMessage(`❌ 問題 (${urlType}): ${dialectFull} > ${category} > 編號 ${itemId} (${itemHakka.substring(0,10)}...) \n   URL: ${url}`, 'error');
+                return true;
+            } else {
+                // logMessage(`✔️ 正常 (${urlType}): ${dialectFull} > ${category} > 編號 ${itemId}`, 'success'); // 可選：顯示成功訊息
+                return false;
+            }
+        }
+
+        function logMessage(message, type = 'info') {
+            const p = document.createElement('p');
+            p.textContent = message;
+            if (type === 'error') p.classList.add('error');
+            else if (type === 'success') p.classList.add('success');
+            else p.classList.add('info'); // Default to info if not error/success
+            
+            resultsDiv.appendChild(p);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight; // 自動捲動到底部
+        }
+
+        startButton.addEventListener('click', async () => {
+            startButton.disabled = true;
+            resultsDiv.innerHTML = '';
+            statusDiv.textContent = '狀態：檢查中，請稍候...';
+            let totalErrors = 0;
+            let totalChecked = 0;
+
+            for (const dl of DIALECT_LEVELS) {
+                if (!dl.data || !dl.data.content) {
+                    logMessage(`資料未定義或無內容: ${dl.name} (變數名: ${dl.varName})`, 'error');
+                    continue;
+                }
+                logMessage(`\n--- 開始檢查: ${dl.name} ---`, 'info');
+
+                const dialectInfo = constructDialectInfo(dl.name, dl.varName);
+                if (!dialectInfo) {
+                    logMessage(`無法為 ${dl.name} 建構 dialectInfo，跳過此項。`, 'error');
+                    continue;
+                }
+
+                let vocabularyArray;
+                try {
+                    vocabularyArray = csvToArray(dl.data.content);
+                } catch (e) {
+                    logMessage(`解析 ${dl.name} 的 CSV 資料時發生錯誤: ${e.message}`, 'error');
+                    continue;
+                }
+
+
+                for (const category of CATEGORIES) {
+                    // logMessage(`  檢查類別: ${category}`, 'info');
+                    const filteredItems = vocabularyArray.filter(
+                        (line) => line.分類 && line.分類.includes(category)
+                    );
+
+                    if (filteredItems.length === 0) {
+                        continue;
+                    }
+
+                    for (const item of filteredItems) {
+                        if (!item.編號 || !item.客家語) {
+                            // logMessage(`    項目資料不完整 (缺少編號或客家語)，跳過: ${JSON.stringify(item).substring(0,100)}...`, 'info');
+                            continue;
+                        }
+
+                        const audioUrls = getAudioFilePaths(item, dialectInfo);
+
+                        if (audioUrls.wordAudioUrl) {
+                            totalChecked++;
+                            statusDiv.textContent = `狀態：檢查中 (${totalChecked} 個音檔)... ${dl.name} > ${category.substring(0,3)}... > ${item.編號}`;
+                            const isWordError = await checkAndLogAudio(audioUrls.wordAudioUrl, dl.name, category, item.編號, item.客家語, '詞彙');
+                            if (isWordError) totalErrors++;
+                        }
+                        if (audioUrls.sentenceAudioUrl) {
+                            totalChecked++;
+                            statusDiv.textContent = `狀態：檢查中 (${totalChecked} 個音檔)... ${dl.name} > ${category.substring(0,3)}... > ${item.編號}`;
+                            const isSentenceError = await checkAndLogAudio(audioUrls.sentenceAudioUrl, dl.name, category, item.編號, item.客家語, '例句');
+                            if (isSentenceError) totalErrors++;
+                        }
+                         // 短暫延遲，避免同時發送過多請求，減輕瀏覽器負擔
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+                }
+                logMessage(`--- ${dl.name} 檢查完畢 ---`, 'info');
+            }
+            statusDiv.textContent = `狀態：全部檢查完成！共檢查 ${totalChecked} 個音檔，發現 ${totalErrors} 個問題音檔。`;
+            startButton.disabled = false;
+            logMessage(`\n🎉 全部檢查完成！共檢查 ${totalChecked} 個音檔，發現 ${totalErrors} 個問題音檔。`, 'info');
+        });
+
+    </script>
+</body>
+</html>

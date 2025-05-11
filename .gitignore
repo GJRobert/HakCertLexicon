@@ -1,2 +1,4 @@
 
 .vscode/settings.json
+*.ffs_db
+*.ffs_gui
