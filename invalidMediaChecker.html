@@ -49,9 +49,11 @@
     <h1>客語認證詞彙無效音檔檢查器</h1>
     <p>這支工具會檢查所有腔調、級別、類別詞彙的音檔，看敢有失效 (例如 404 錯誤) 或因 CORS 設定而無法存取的連結。</p>
     <p><strong>注意：</strong>檢查過程可能會花兜時間，請耐心等待。結果會顯示在下方。</p>
-    <button id="startButton">開始檢查</button>
+    <button id="startButton">從頭開始檢查</button>
+    <button id="resumeButton" style="display: none; margin-left: 10px;">從上次進度繼續檢查</button>
+    <div id="progressInfo" style="margin-top: 10px; color: #555; font-size: 0.9em;"></div>
     <div id="status">狀態：還未開始</div>
-    <div id="results"></div>
+    <div id="results"></div> <!-- 結果顯示區 -->
 
     <script>
         const resultsDiv = document.getElementById('results');
@@ -83,6 +85,11 @@
             "法律、政治與軍事", "社會關係與行為", "時空與情狀副詞", "特殊詞類",
             "通訊、建設與交通", "歲時祭儀、習俗與宗教", "數詞量詞", "職業與經濟", "藝文與教育"
         ];
+
+        const PROGRESS_STORAGE_KEY = 'hakkaInvalidMediaCheckProgress';
+        let savedProgressData = null; // 用來儲存解析後的進度物件
+        const resumeButton = document.getElementById('resumeButton');
+        const progressInfoDiv = document.getElementById('progressInfo');
 
         // 新增：統一記錄到頁面和控制台的函式
         function logToPageAndConsole(message, type = 'debug') {
@@ -314,20 +321,93 @@
                 return false;
             }
         }
-        
-        startButton.addEventListener('click', async () => {
+
+        function loadSavedProgress() {
+            const progressString = localStorage.getItem(PROGRESS_STORAGE_KEY);
+            progressInfoDiv.textContent = ''; // 先清空
+            resumeButton.style.display = 'none'; // 先隱藏
+
+            if (progressString) {
+                try {
+                    savedProgressData = JSON.parse(progressString);
+                    if (savedProgressData && 
+                        typeof savedProgressData.dialectLevelIndex === 'number' &&
+                        DIALECT_LEVELS[savedProgressData.dialectLevelIndex] &&
+                        typeof savedProgressData.categoryIndex === 'number' &&
+                        CATEGORIES[savedProgressData.categoryIndex] &&
+                        typeof savedProgressData.itemIndex === 'number') {
+
+                        const dlName = DIALECT_LEVELS[savedProgressData.dialectLevelIndex].name;
+                        const catName = CATEGORIES[savedProgressData.categoryIndex];
+                        
+                        let progressText = `偵測到上次檢查進度: ${dlName} > ${catName} > 已完成該類別第 ${savedProgressData.itemIndex + 1} 個詞彙 (索引 ${savedProgressData.itemIndex})`;
+
+                        // 嘗試取得該詞彙的編號 (如果資料結構允許且不太耗效能)
+                        const dl = DIALECT_LEVELS[savedProgressData.dialectLevelIndex];
+                        if (dl && dl.data && dl.data.content) {
+                            const tempVocabArray = csvToArray(dl.data.content); // csvToArray 應該是輕量的
+                            const tempFilteredItems = tempVocabArray.filter(
+                                (line) => line && line.分類 && line.分類.includes(catName)
+                            );
+                            if (tempFilteredItems[savedProgressData.itemIndex] && tempFilteredItems[savedProgressData.itemIndex].編號) {
+                                progressText += `，編號: ${tempFilteredItems[savedProgressData.itemIndex].編號}`;
+                            }
+                        }
+
+                        progressInfoDiv.textContent = progressText;
+                        resumeButton.style.display = 'inline-block';
+                        // logToPageAndConsole(progressText, "info"); // 避免重複 log，按鈕點擊時再 log
+                    } else {
+                        logToPageAndConsole("儲存的進度資料格式無效，已清除。", "error");
+                        localStorage.removeItem(PROGRESS_STORAGE_KEY);
+                        savedProgressData = null;
+                    }
+                } catch (e) {
+                    console.error("解析儲存的進度時發生錯誤:", e);
+                    logToPageAndConsole("解析儲存的進度失敗，已清除。", "error");
+                    localStorage.removeItem(PROGRESS_STORAGE_KEY);
+                    savedProgressData = null;
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSavedProgress();
+        });
+
+        startButton.addEventListener('click', () => performCheck(null));
+        resumeButton.addEventListener('click', () => performCheck(savedProgressData));
+
+        async function performCheck(resumeFromProgress = null) {
             startButton.disabled = true;
+            resumeButton.disabled = true;
             resultsDiv.innerHTML = ''; 
-            logToPageAndConsole("檢查開始...", "info");
             statusDiv.textContent = '狀態：檢查中，請稍候...';
+
             let totalErrors = 0;
             let totalChecked = 0;
             let itemsProcessed = 0; // 記錄實際處理的詞彙項目數量
 
+            let startDlIdx = 0;
+            let startCatIdx = 0;
+            let startItemIdx = 0;
+
+            if (resumeFromProgress) {
+                startDlIdx = resumeFromProgress.dialectLevelIndex;
+                startCatIdx = resumeFromProgress.categoryIndex;
+                startItemIdx = resumeFromProgress.itemIndex + 1; // 從儲存的下一個項目開始
+                logToPageAndConsole(`接續上次進度檢查: ${DIALECT_LEVELS[startDlIdx].name} > ${CATEGORIES[startCatIdx]} > (從索引 ${startItemIdx} 開始)`, "info");
+            } else {
+                localStorage.removeItem(PROGRESS_STORAGE_KEY); // 從頭開始前清除舊進度
+                logToPageAndConsole("從頭開始檢查...", "info");
+            }
+
             // 檢查 DIALECT_LEVELS 是否正確載入資料
             logToPageAndConsole(`DIALECT_LEVELS 內容概要: ${JSON.stringify(DIALECT_LEVELS.map(d => ({name: d.name, varName: d.varName, hasData: !!d.data, hasContent: !!(d.data && d.data.content) })))}`, 'debug');
 
-            for (const dl of DIALECT_LEVELS) {
+            // 改用傳統 for 迴圈以取得 dlIndex
+            for (let dlIndex = startDlIdx; dlIndex < DIALECT_LEVELS.length; dlIndex++) {
+                const dl = DIALECT_LEVELS[dlIndex];
                 logToPageAndConsole(`\n處理腔調級別: ${dl.name} (變數名: ${dl.varName})`, 'debug');
                 if (!dl.data) {
                     logToPageAndConsole(`  ERROR: 資料物件 (dl.data) 未定義 for ${dl.name}. 全域變數 ${dl.varName} 可能未正確載入或不存在。`, 'error');
@@ -368,12 +448,19 @@
                     continue;
                 }
 
-                for (const category of CATEGORIES) {
-                    // logToPageAndConsole(`  檢查類別: ${category}`, 'debug'); // 這行訊息可能太多
+                const currentStartCatIdx = (dlIndex === startDlIdx) ? startCatIdx : 0;
+
+                for (let catIndex = currentStartCatIdx; catIndex < CATEGORIES.length; catIndex++) {
+                    const category = CATEGORIES[catIndex];
+                    // logToPageAndConsole(`  檢查類別: ${category}`, 'debug');
+
                     const filteredItems = vocabularyArray.filter(
                         (line) => line && line.分類 && line.分類.includes(category) 
                     );
                     // logToPageAndConsole(`    類別 ${category} 過濾後有 ${filteredItems.length} 個項目。`, 'debug');
+
+                    const currentStartItemIdx = (dlIndex === startDlIdx && catIndex === startCatIdx) ? startItemIdx : 0;
+
 
                     if (filteredItems.length === 0) {
                         continue;
@@ -382,10 +469,11 @@
                     for (const item of filteredItems) {
                         itemsProcessed++; // 增加已處理項目計數
                         const hakkaTermKey = dialectInfo.腔名 + '客家語';
-                        const currentHakkaTerm = item[hakkaTermKey];
+                        const currentHakkaTerm = item[hakkaTermKey]; // 確保 item 不是 undefined
 
-                        if (!item.編號 || item.編號.trim() === '' || !currentHakkaTerm || currentHakkaTerm.trim() === '') {
-                            logToPageAndConsole(`    項目資料不完整 (缺少有效編號或 '${hakkaTermKey}' 客家語詞彙)，跳過: ${JSON.stringify(item).substring(0,100)}...`, 'debug');
+                        if (!item || !item.編號 || item.編號.trim() === '' || !currentHakkaTerm || currentHakkaTerm.trim() === '') {
+                            // logToPageAndConsole(`    項目資料不完整 (缺少有效編號或 '${hakkaTermKey}' 客家語詞彙)，跳過: ${JSON.stringify(item).substring(0,100)}...`, 'debug');
+                            // 這一行 log 可能太多，先註解
                             continue;
                         }
 
@@ -403,7 +491,16 @@
                             const isSentenceError = await checkAndLogAudio(audioUrls.sentenceAudioUrl, dl.name, category, item.編號, currentHakkaTerm, '例句');
                             if (isSentenceError) totalErrors++;
                         }
-                        await new Promise(resolve => setTimeout(resolve, 20)); // 短暫延遲，可以稍微縮短一點點
+
+                        // 儲存進度 (儲存的是剛處理完的項目索引)
+                        const progressToSave = {
+                            dialectLevelIndex: dlIndex,
+                            categoryIndex: catIndex,
+                            itemIndex: filteredItems.indexOf(item) // 儲存目前項目在 filteredItems 中的索引
+                        };
+                        localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progressToSave));
+
+                        await new Promise(resolve => setTimeout(resolve, 15)); // 短暫延遲
                     }
                 }
                 logToPageAndConsole(`--- ${dl.name} 檢查完畢 ---`, 'info');
@@ -415,9 +512,12 @@
 
             statusDiv.textContent = `狀態：全部檢查完成！共處理 ${itemsProcessed} 個詞彙項目，檢查 ${totalChecked} 個音檔，發現 ${totalErrors} 個問題音檔。`;
             startButton.disabled = false;
+            resumeButton.disabled = false;
+            localStorage.removeItem(PROGRESS_STORAGE_KEY); // 檢查完成後清除進度
+            progressInfoDiv.textContent = '檢查完成，進度已清除。';
+            resumeButton.style.display = 'none'; // 隱藏繼續按鈕
             logToPageAndConsole(`\n🎉 全部檢查完成！共處理 ${itemsProcessed} 個詞彙項目，檢查 ${totalChecked} 個音檔，發現 ${totalErrors} 個問題音檔。`, 'info');
-        });
-
+        }
     </script>
 </body>
 </html>
