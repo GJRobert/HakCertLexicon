@@ -1,5 +1,7 @@
 # HakCertLexicon
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Aiuanyu/HakCertLexicon)
+
 ## 鍵盤控制
 
 - 空白鍵
