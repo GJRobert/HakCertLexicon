@@ -1550,7 +1550,7 @@ document.addEventListener('DOMContentLoaded', function () {
     progressDropdown.addEventListener('change', function (event) {
       const selectedValue = this.value;
 
-      if (selectedValue && selectedValue !== '學習進度') {
+      if (selectedValue && selectedValue !== '擇進前个進度') {
         const bookmarks =
           JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
         const selectedBookmark = bookmarks.find(
@@ -1905,7 +1905,7 @@ document.addEventListener('keydown', function(event) {
       } else { // !isPlaying: 載入並播放第一筆書籤
         const progressDropdown = document.getElementById('progressDropdown');
         if (progressDropdown && progressDropdown.options.length > 1) {
-          // 取得下拉選單中第一筆實際書籤个 value (索引 1，因為索引 0 係 "學習進度")
+          // 取得下拉選單中第一筆實際書籤个 value (索引 1，因為索引 0 係 "擇進前个進度")
           const selectedValue = progressDropdown.options[1].value;
           const bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
           // 根據 value 尋著對應个書籤物件
@@ -2259,7 +2259,7 @@ function updateProgressDropdown() {
   const bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
 
   // 清空現有選項 (保留第一個預設選項)
-  progressDropdown.innerHTML = '<option selected disabled>學習進度</option>';
+  progressDropdown.innerHTML = '<option selected disabled>擇進前个進度</option>';
   // --- 新增：如果沒有書籤，確保 details 是空的 ---
   if (bookmarks.length === 0 && progressDetailsSpan) {
     progressDetailsSpan.textContent = '';
@@ -2270,7 +2270,7 @@ function updateProgressDropdown() {
   bookmarks.forEach((bookmark, index) => {
     const option = document.createElement('option');
     // 格式化顯示文字
-    option.textContent = `${index + 1}. ${bookmark.tableName} - ${
+    option.textContent = `${bookmark.tableName} - ${
       bookmark.cat
     } - #${bookmark.rowId} (${bookmark.percentage}%)`;
     // 可以設定 value 屬性，方便未來擴充點選跳轉功能
@@ -2280,7 +2280,7 @@ function updateProgressDropdown() {
   });
 
   // --- 新增：嘗試恢復之前的選中狀態 ---
-  if (previousValue && previousValue !== '學習進度') {
+  if (previousValue && previousValue !== '擇進前个進度') {
     // 尋找具有相同 value 的新選項
     const newOptionToSelect = progressDropdown.querySelector(
       `option[value="${previousValue}"]`
