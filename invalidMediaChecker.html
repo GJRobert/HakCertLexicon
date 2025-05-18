@@ -13,11 +13,22 @@
     <script src="113海初.js"></script>
     <script src="113海中.js"></script>
     <script src="113海中高.js"></script>
+    <script src="113海高.js"></script> <!-- 海陸 -->
     <script src="113大基.js"></script>
     <script src="113大初.js"></script>
     <script src="113大中.js"></script>
+    <script src="113大中高.js"></script> <!-- 大埔 -->
+    <script src="113大高.js"></script> <!-- 大埔 -->
     <script src="113平基.js"></script>
+    <script src="113平初.js"></script> <!-- 饒平 -->
+    <script src="113平中.js"></script> <!-- 饒平 -->
+    <script src="113平中高.js"></script> <!-- 饒平 -->
+    <script src="113平高.js"></script> <!-- 饒平 -->
     <script src="113安基.js"></script>
+    <script src="113安初.js"></script> <!-- 詔安 -->
+    <script src="113安中.js"></script> <!-- 詔安 -->
+    <script src="113安中高.js"></script> <!-- 詔安 -->
+    <script src="113安高.js"></script> <!-- 詔安 -->
     <!-- 載入例外音檔設定 -->
     <script src="exclusions.js"></script>
     <style>
@@ -44,6 +55,35 @@
         .item-info { margin-bottom: 5px; }
         .debug { color: #6c757d; font-style: italic; font-size: 0.9em; } /* 除錯訊息樣式 */
     </style>
+    <style>
+        /* New styles for selection panel */
+        #selectionPanel {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        .dialect-group {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ccc;
+        }
+        .dialect-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .dialect-group h4 {
+            margin: 0 0 5px 0;
+            color: #007bff;
+        }
+        .dialect-group label {
+            margin-right: 15px;
+            display: inline-block; /* Make labels inline but allow padding/margin */
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <h1>客語認證詞彙無效音檔檢查器</h1>
@@ -51,6 +91,52 @@
     <p><strong>注意：</strong>檢查過程可能會花兜時間，請耐心等待。結果會顯示在下方。</p>
     <button id="startButton">從頭開始檢查</button>
     <button id="resumeButton" style="display: none; margin-left: 10px;">從上次進度繼續檢查</button>
+
+    <!-- Selection Panel -->
+    <div id="selectionPanel">
+        <label><input type="checkbox" id="selectAll"> 擇全部</label>
+        <hr> <!-- Separator -->
+        <div class="dialect-group">
+            <h4>四縣</h4>
+            <label><input type="checkbox" class="level-checkbox" data-varname="四基"> 基礎</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="四初"> 初級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="四中"> 中級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="四中高"> 中高</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="四高"> 高級</label>
+        </div>
+        <div class="dialect-group">
+            <h4>海陸</h4>
+            <label><input type="checkbox" class="level-checkbox" data-varname="海基"> 基礎</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="海初"> 初級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="海中"> 中級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="海中高"> 中高</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="海高"> 高級</label>
+        </div>
+        <div class="dialect-group">
+            <h4>大埔</h4>
+            <label><input type="checkbox" class="level-checkbox" data-varname="大基"> 基礎</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="大初"> 初級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="大中"> 中級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="大中高"> 中高</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="大高"> 高級</label>
+        </div>
+        <div class="dialect-group">
+            <h4>饒平</h4>
+            <label><input type="checkbox" class="level-checkbox" data-varname="平基"> 基礎</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="平初"> 初級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="平中"> 中級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="平中高"> 中高</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="平高"> 高級</label>
+        </div>
+        <div class="dialect-group">
+            <h4>詔安</h4>
+            <label><input type="checkbox" class="level-checkbox" data-varname="安基"> 基礎</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="安初"> 初級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="安中"> 中級</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="安中高"> 中高</label>
+            <label><input type="checkbox" class="level-checkbox" data-varname="安高"> 高級</label>
+        </div>
+    </div>
     <div id="progressInfo" style="margin-top: 10px; color: #555; font-size: 0.9em;"></div>
     <div id="status">狀態：還未開始</div>
     <div id="results"></div> <!-- 結果顯示區 -->
@@ -71,11 +157,22 @@
             { name: "海陸初級",   varName: "海初", data: typeof 海初 !== 'undefined' ? 海初 : null },
             { name: "海陸中級",   varName: "海中", data: typeof 海中 !== 'undefined' ? 海中 : null },
             { name: "海陸中高級", varName: "海中高", data: typeof 海中高 !== 'undefined' ? 海中高 : null },
+            { name: "海陸高級",   varName: "海高", data: typeof 海高 !== 'undefined' ? 海高 : null },
             { name: "大埔基礎級", varName: "大基", data: typeof 大基 !== 'undefined' ? 大基 : null },
             { name: "大埔初級",   varName: "大初", data: typeof 大初 !== 'undefined' ? 大初 : null },
             { name: "大埔中級",   varName: "大中", data: typeof 大中 !== 'undefined' ? 大中 : null },
+            { name: "大埔中高級", varName: "大中高", data: typeof 大中高 !== 'undefined' ? 大中高 : null },
+            { name: "大埔高級",   varName: "大高", data: typeof 大高 !== 'undefined' ? 大高 : null },
             { name: "饒平基礎級", varName: "平基", data: typeof 平基 !== 'undefined' ? 平基 : null },
-            { name: "詔安基礎級", varName: "安基", data: typeof 安基 !== 'undefined' ? 安基 : null }
+            { name: "饒平初級",   varName: "平初", data: typeof 平初 !== 'undefined' ? 平初 : null },
+            { name: "饒平中級",   varName: "平中", data: typeof 平中 !== 'undefined' ? 平中 : null},
+            { name: "饒平中高級", varName: "平中高", data: typeof 平中高 !== 'undefined' ? 平中高 : null },
+            { name: "饒平高級",   varName: "平高", data: typeof 平高 !== 'undefined' ? 平高 : null },
+            { name: "詔安基礎級", varName: "安基", data: typeof 安基 !== 'undefined' ? 安基 : null },
+            { name: "詔安初級",   varName: "安初", data: typeof 安初 !== 'undefined' ? 安初 : null },
+            { name: "詔安中級",   varName: "安中", data: typeof 安中 !== 'undefined' ? 安中 : null},
+            { name: "詔安中高級", varName: "安中高", data: typeof 安中高 !== 'undefined' ? 安中高 : null},
+            { name: "詔安高級",   varName: "安高", data: typeof 安高 !== 'undefined' ? 安高 : null }
         ];
 
         // 從 index.html 整理出來的分類
@@ -89,6 +186,8 @@
         const PROGRESS_STORAGE_KEY = 'hakkaInvalidMediaCheckProgress';
         let savedProgressData = null; // 用來儲存解析後的進度物件
         const resumeButton = document.getElementById('resumeButton');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const levelCheckboxes = document.querySelectorAll('.level-checkbox');
         const progressInfoDiv = document.getElementById('progressInfo');
 
         // 新增：統一記錄到頁面和控制台的函式
@@ -100,7 +199,7 @@
             p.innerHTML = message.replace(/\n/g, '<br>');
             
             if (type === 'error') p.classList.add('error');
-            else if (type === 'success') p.classList.add('success');
+            else if (type === 'success') p.classList.add('success'); // 暫時用毋著，因為成功訊息預設關忒
             else if (type === 'info') p.classList.add('info');
             else p.classList.add('debug');
             
@@ -327,6 +426,7 @@
             progressInfoDiv.textContent = ''; // 先清空
             resumeButton.style.display = 'none'; // 先隱藏
 
+            savedProgressData = null; // 重設儲存資料个狀態
             if (progressString) {
                 try {
                     savedProgressData = JSON.parse(progressString);
@@ -358,7 +458,7 @@
                         resumeButton.style.display = 'inline-block';
                         // logToPageAndConsole(progressText, "info"); // 避免重複 log，按鈕點擊時再 log
                     } else {
-                        logToPageAndConsole("儲存的進度資料格式無效，已清除。", "error");
+                        logToPageAndConsole("儲存的進度資料格式無效或指向不存在的項目，已清除。", "error");
                         localStorage.removeItem(PROGRESS_STORAGE_KEY);
                         savedProgressData = null;
                     }
@@ -371,6 +471,37 @@
             }
         }
 
+        // --- Checkbox Logic ---
+        function updateSelectAllCheckbox() {
+            const totalLevelCheckboxes = levelCheckboxes.length;
+            const checkedLevelCheckboxes = document.querySelectorAll('.level-checkbox:checked').length;
+            selectAllCheckbox.checked = totalLevelCheckboxes === checkedLevelCheckboxes;
+            // 設定 indeterminate 狀態：部分勾選時顯示橫線
+            selectAllCheckbox.indeterminate = checkedLevelCheckboxes > 0 && checkedLevelCheckboxes < totalLevelCheckboxes;
+        }
+
+        // 「擇全部」勾選框事件
+        selectAllCheckbox.addEventListener('change', (event) => {
+            levelCheckboxes.forEach(checkbox => {
+                checkbox.checked = event.target.checked;
+            });
+            updateSelectAllCheckbox(); // 確保狀態正確更新
+        });
+
+        // 各級別勾選框事件
+        levelCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllCheckbox);
+        });
+
+        // 頁面載入時初始化勾選框狀態
+        // 預設全部勾選
+        selectAllCheckbox.checked = true;
+        levelCheckboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        updateSelectAllCheckbox(); // 設定初始狀態
+        // --- End Checkbox Logic ---
+
         document.addEventListener('DOMContentLoaded', () => {
             loadSavedProgress();
         });
@@ -378,10 +509,23 @@
         startButton.addEventListener('click', () => performCheck(null));
         resumeButton.addEventListener('click', () => performCheck(savedProgressData));
 
+        // 檢查前確認有勾選項目
+        startButton.addEventListener('click', () => {
+             const anySelected = Array.from(levelCheckboxes).some(cb => cb.checked);
+             if (!anySelected) {
+                 alert("請至少選擇一個腔調級別來檢查。");
+                 return;
+             }
+             performCheck(null);
+        });
+
         async function performCheck(resumeFromProgress = null) {
             startButton.disabled = true;
             resumeButton.disabled = true;
             resultsDiv.innerHTML = ''; 
+            // 檢查時禁用勾選框
+            selectAllCheckbox.disabled = true;
+            levelCheckboxes.forEach(cb => cb.disabled = true);
             statusDiv.textContent = '狀態：檢查中，請稍候...';
 
             let totalErrors = 0;
@@ -395,10 +539,11 @@
             if (resumeFromProgress) {
                 startDlIdx = resumeFromProgress.dialectLevelIndex;
                 startCatIdx = resumeFromProgress.categoryIndex;
-                startItemIdx = resumeFromProgress.itemIndex + 1; // 從儲存的下一個項目開始
+                startItemIdx = resumeFromProgress.itemIndex + 1; // 從儲存的該類別的下一個項目開始
                 logToPageAndConsole(`接續上次進度檢查: ${DIALECT_LEVELS[startDlIdx].name} > ${CATEGORIES[startCatIdx]} > (從索引 ${startItemIdx} 開始)`, "info");
             } else {
                 localStorage.removeItem(PROGRESS_STORAGE_KEY); // 從頭開始前清除舊進度
+                // 確保從頭開始時，所有起始索引都為 0
                 logToPageAndConsole("從頭開始檢查...", "info");
             }
 
@@ -409,6 +554,13 @@
             for (let dlIndex = startDlIdx; dlIndex < DIALECT_LEVELS.length; dlIndex++) {
                 const dl = DIALECT_LEVELS[dlIndex];
                 logToPageAndConsole(`\n處理腔調級別: ${dl.name} (變數名: ${dl.varName})`, 'debug');
+
+                // 根據勾選框決定係毋係愛檢查這隻腔調級別
+                const checkbox = document.querySelector(`input[type="checkbox"][data-varname="${dl.varName}"]`);
+                if (!checkbox || !checkbox.checked) {
+                    logToPageAndConsole(`跳過未勾選的腔調級別: ${dl.name}`, 'debug');
+                    continue; // 跳過這隻腔調級別
+                }
                 if (!dl.data) {
                     logToPageAndConsole(`  ERROR: 資料物件 (dl.data) 未定義 for ${dl.name}. 全域變數 ${dl.varName} 可能未正確載入或不存在。`, 'error');
                     continue;
@@ -448,6 +600,7 @@
                     continue;
                 }
 
+                // 決定這隻腔調級別愛從哪隻類別開始檢查
                 const currentStartCatIdx = (dlIndex === startDlIdx) ? startCatIdx : 0;
 
                 for (let catIndex = currentStartCatIdx; catIndex < CATEGORIES.length; catIndex++) {
@@ -458,6 +611,7 @@
                         (line) => line && line.分類 && line.分類.includes(category) 
                     );
                     // logToPageAndConsole(`    類別 ${category} 過濾後有 ${filteredItems.length} 個項目。`, 'debug');
+                    // 類別毋需要勾選框，只要腔調級別勾選了就會檢查該級別下底所有類別
 
                     const currentStartItemIdx = (dlIndex === startDlIdx && catIndex === startCatIdx) ? startItemIdx : 0;
 
@@ -492,13 +646,15 @@
                             if (isSentenceError) totalErrors++;
                         }
 
-                        // 儲存進度 (儲存的是剛處理完的項目索引)
+                        // 儲存進度 (儲存个係剛處理好个項目在過濾後陣列中个索引)
                         const progressToSave = {
                             dialectLevelIndex: dlIndex,
                             categoryIndex: catIndex,
                             itemIndex: filteredItems.indexOf(item) // 儲存目前項目在 filteredItems 中的索引
                         };
                         localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progressToSave));
+                        // 更新進度顯示
+                        statusDiv.textContent = `狀態：檢查中 (${totalChecked} 個音檔)... ${dl.name} > ${category.substring(0,3)}... > 編號 ${item.編號}`;
 
                         await new Promise(resolve => setTimeout(resolve, 15)); // 短暫延遲
                     }
@@ -507,12 +663,17 @@
             }
 
             if (itemsProcessed === 0 && totalChecked === 0) {
-                 logToPageAndConsole("警告：沒有處理任何詞彙項目，也沒有檢查任何音檔。\n請檢查：\n1. 所有 .js 資料檔案是否與此 HTML 檔案在同一個資料夾內。\n2. .js 資料檔案內容是否正確 (例如 `四基.content = \"編號,客家語,...\n...\";` 這樣的格式)。\n3. 瀏覽器控制台是否有其他錯誤訊息。", "error");
+                 logToPageAndConsole("警告：沒有處理任何詞彙項目，也沒有檢查任何音檔。\n請檢查：\n1. 是否已勾選至少一個腔調級別。\n2. 所有 .js 資料檔案是否與此 HTML 檔案在同一個資料夾內。\n3. .js 資料檔案內容是否正確 (例如 `四基.content = \"編號,客家語,...\n...\";` 這樣的格式)。\n4. 瀏覽器控制台是否有其他錯誤訊息。", "error"); // 增加檢查勾選框个提示
             }
 
             statusDiv.textContent = `狀態：全部檢查完成！共處理 ${itemsProcessed} 個詞彙項目，檢查 ${totalChecked} 個音檔，發現 ${totalErrors} 個問題音檔。`;
             startButton.disabled = false;
             resumeButton.disabled = false;
+            // Re-enable checkboxes
+            selectAllCheckbox.disabled = false;
+            levelCheckboxes.forEach(cb => cb.disabled = false);
+            updateSelectAllCheckbox(); // 更新勾選框狀態
+            
             localStorage.removeItem(PROGRESS_STORAGE_KEY); // 檢查完成後清除進度
             progressInfoDiv.textContent = '檢查完成，進度已清除。';
             resumeButton.style.display = 'none'; // 隱藏繼續按鈕
