@@ -529,6 +529,16 @@ function buildTableAndSetupPlayback(
   for (const line of filteredItems) {
     // --- 內部建立 tr, td, audio, button 的邏輯基本不變 ---
     // --- 但需要使用傳入的 dialectInfo 物件來獲取變數 ---
+
+    // --- 新增：在處理每一行詞彙前，先取得音檔缺失資訊 ---
+    const missingAudioInfo = typeof getMissingAudioInfo === 'function' ?
+                           getMissingAudioInfo(dialectInfo.fullLvlName, category, line.編號) :
+                           null;
+    // if (missingAudioInfo) { // Debug log
+    //   console.log(`音檔缺失資訊 for ${dialectInfo.fullLvlName} - ${category} - ${line.編號}:`, missingAudioInfo);
+    // }
+
+    // --- 但需要使用傳入的 dialectInfo 物件來獲取變數 ---
     let mediaYr = dialectInfo.generalMediaYr;
     let pre112Insertion詞 = '';
     let pre112Insertion句 = '';
@@ -626,25 +636,50 @@ function buildTableAndSetupPlayback(
     ruby.appendChild(rt);
     td2.appendChild(ruby);
     td2.appendChild(document.createElement('br'));
-    const audio1 = document.createElement('audio');
-    audio1.className = 'media';
-    audio1.controls = true;
-    audio1.preload = 'none';
-    const source1 = document.createElement('source');
-    // *** 注意路徑組合 ***
-    let wordAudioSrc = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${詞目錄}-${no[0]}-${mediaNo}.mp3`;
-    if (dialectInfo.fullLvlName === '海陸中高級' && line.編號 === '4-261') {
-      wordAudioSrc =
-        'https://elearning.hakka.gov.tw/hakka/files/dictionaries/3/hk0000014571/hk0000014571-1-2.mp3';
-      console.log(
-        `[main.js OVERRIDE] Using special URL for 海陸中高級 4-261 詞彙: ${wordAudioSrc}`
-      );
+
+    // --- 修改：處理詞彙音檔 (audio1) ---
+    let wordAudioActuallyMissing = false;
+    if (missingAudioInfo && missingAudioInfo.word === false) {
+      wordAudioActuallyMissing = true;
     }
-    source1.src = wordAudioSrc;
-    source1.type = 'audio/mpeg';
-    audio1.appendChild(source1);
-    td2.appendChild(audio1);
-    audioElementsList.push(audio1); // 收集音檔
+
+    if (wordAudioActuallyMissing) {
+      const noWordAudioMsg = document.createElement('span');
+      noWordAudioMsg.textContent = '（無詞彙音檔，敗勢）';
+      noWordAudioMsg.style.color = 'red'; // 用紅色標示詞彙音檔缺失
+      td2.appendChild(noWordAudioMsg);
+
+      const dummyAudioForMissingWord = document.createElement('audio');
+      dummyAudioForMissingWord.className = 'media';
+      dummyAudioForMissingWord.dataset.skip = 'true';
+      dummyAudioForMissingWord.controls = false;
+      dummyAudioForMissingWord.preload = 'none';
+      dummyAudioForMissingWord.style.display = 'none'; // 隱藏假音檔
+      audioElementsList.push(dummyAudioForMissingWord); // 收集假音檔
+    } else {
+      // 詞彙音檔存在或無特定缺失資訊，照常建立
+      const audio1 = document.createElement('audio');
+      audio1.className = 'media';
+      audio1.controls = true;
+      audio1.preload = 'none';
+      const source1 = document.createElement('source');
+      let wordAudioSrc = `https://elearning.hakka.gov.tw/hakka/files/cert/vocabulary/${mediaYr}/${詞目錄}-${no[0]}-${mediaNo}.mp3`;
+      // 特定 URL 覆蓋 (例如 海陸中高級 4-261 的詞彙音檔有替代來源)
+      if (dialectInfo.fullLvlName === '海陸中高級' && line.編號 === '4-261') {
+        wordAudioSrc =
+          'https://elearning.hakka.gov.tw/hakka/files/dictionaries/3/hk0000014571/hk0000014571-1-2.mp3';
+        console.log(
+          `[main.js OVERRIDE] Using special URL for 海陸中高級 4-261 詞彙: ${wordAudioSrc}`
+        );
+      }
+      source1.src = wordAudioSrc;
+      source1.type = 'audio/mpeg';
+      audio1.appendChild(source1);
+      td2.appendChild(audio1);
+      audioElementsList.push(audio1); // 收集音檔
+    }
+    // --- 詞彙音檔處理結束 ---
+
     td2.appendChild(document.createElement('br'));
     const meaningText = document.createTextNode(
       line.華語詞義.replace(/"/g, '')
@@ -673,7 +708,13 @@ function buildTableAndSetupPlayback(
       td3.appendChild(sentenceSpan);
       td3.appendChild(document.createElement('br'));
 
-      // --- 修改：根據係無係「高級」來決定愛用實際音檔還係假音檔 ---
+      // --- 修改：處理例句音檔 (audio2) ---
+      let sentenceAudioActuallyMissing = false;
+      // 檢查 NAmedias.js 是否標記例句音檔缺失 (且非 'na')
+      if (missingAudioInfo && missingAudioInfo.sentence === false) {
+        sentenceAudioActuallyMissing = true;
+      }
+
       if (dialectInfo.級名 === '高級') {
         // 「高級」級別：就算有例句文字，也加入一個跳過的假音檔
         const dummyAudioForAdvanced = document.createElement('audio');
@@ -681,28 +722,26 @@ function buildTableAndSetupPlayback(
         dummyAudioForAdvanced.dataset.skip = 'true';
         dummyAudioForAdvanced.controls = false;
         dummyAudioForAdvanced.preload = 'none';
-        dummyAudioForAdvanced.style.display = 'none'; // 確保隱藏
+        dummyAudioForAdvanced.style.display = 'none';
         td3.appendChild(dummyAudioForAdvanced);
         audioElementsList.push(dummyAudioForAdvanced); // 收集假音檔
-      } else if (dialectInfo.fullLvlName === '海陸中高級' && line.編號 === '4-261') {
-        // 特定已知無例句音檔个情況
-/* GHSRobert：Gemini 這段是用來做假音檔个，無愛
-        const dummyAudioMissing = document.createElement('audio');
-        dummyAudioMissing.className = 'media';
-        dummyAudioMissing.dataset.skip = 'true';
-        dummyAudioMissing.controls = false;
-        dummyAudioMissing.preload = 'none';
-        dummyAudioMissing.style.display = 'none';
-        td3.appendChild(dummyAudioMissing);
-        audioElementsList.push(dummyAudioMissing);
-*/
-        const noAudioMsg = document.createElement('span');
-        noAudioMsg.textContent = '（無例句音檔，敗勢）';
-        noAudioMsg.style.color = 'magenta'; // 或者用 CSS class 來設定樣式
-        // noAudioMsg.style.fontSize = '0.9em';
-        td3.appendChild(noAudioMsg); // Gemini：加在例句文字後 ← GHSRobert：無愛，忒低調吔，應該自家一行
+      } else if (sentenceAudioActuallyMissing) {
+        // 非「高級」，但 NAmedias.js 指出例句音檔缺失
+        const noSentenceAudioMsg = document.createElement('span');
+        noSentenceAudioMsg.textContent = '（無例句音檔，敗勢）';
+        noSentenceAudioMsg.style.color = 'magenta'; // 用洋紅色標示例句音檔缺失
+        td3.appendChild(noSentenceAudioMsg);
+
+        const dummyAudioForMissingSentence = document.createElement('audio');
+        dummyAudioForMissingSentence.className = 'media';
+        dummyAudioForMissingSentence.dataset.skip = 'true';
+        dummyAudioForMissingSentence.controls = false;
+        dummyAudioForMissingSentence.preload = 'none';
+        dummyAudioForMissingSentence.style.display = 'none';
+        td3.appendChild(dummyAudioForMissingSentence);
+        audioElementsList.push(dummyAudioForMissingSentence); // 收集假音檔
       } else {
-        // 非「高級」級別：若有例句文字，則加入實際个 audio2
+        // 非「高級」級別，且音檔應存在 (或無特定缺失資訊)：加入實際个 audio2
         const audio2 = document.createElement('audio');
         audio2.className = 'media';
         audio2.controls = true;
@@ -714,7 +753,7 @@ function buildTableAndSetupPlayback(
         td3.appendChild(audio2);
         audioElementsList.push(audio2); // 收集音檔
       }
-      // --- 修改結束 ---
+      // --- 例句音檔處理結束 ---
 
       td3.appendChild(document.createElement('br'));
       const translationText = document.createElement('span');
