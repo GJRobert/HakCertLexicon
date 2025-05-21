@@ -840,6 +840,17 @@ function buildTableAndSetupPlayback(
   // --- 抽離結束 ---
 
   function playAudio(index) {
+    // --- 新增：播放狀態保護 ---
+    // 若 isPlaying 係 false (例如使用者已經按下停止鈕)，就直接結束函式，毋使做任何播放動作。
+    // 這做得防止在狀態快速變化時 (例如連續跳過音檔時按下停止)，意外重新開始播放。
+    if (!isPlaying) {
+      console.warn(
+        `playAudio(${index}) 被呼叫，但 isPlaying 係 false。中止播放程序。`
+      );
+      return;
+    }
+    // --- 新增結束 ---
+
     // 獲取類別列表和目前索引，並將其設為 currentCategoryIndex
     const radioButtons = document.querySelectorAll('input[name="category"]');
     categoryList = Array.from(radioButtons).map((radio) => radio.value);
