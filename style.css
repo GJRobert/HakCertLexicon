@@ -476,6 +476,99 @@ span[data-varname].active-dialect-level {
   background-color: rgba(220, 53, 69, 0.1); /* 可選：加上淡淡的紅色背景 */
 }
 
+/* --- 客話選詞 Popup 樣式 (Hakka Selection Popup Styles) --- */
+#selectionPopupBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4); /* 半透明背景 */
+  z-index: 1001; /* 比其他內容高，比 popup 低 */
+  /* display: none; 由 JS 控制 */
+}
+
+#selectionPopup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #fff; /* 日間模式背景 */
+  color: var(--main-text-color); /* 日間模式文字 */
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  z-index: 1002; /* 比 backdrop 高一層 */
+  /* display: none; 由 JS 控制 */
+  width: clamp(300px, 60vw, 500px); /* 響應式寬度，最小 300px */
+  max-height: 70vh; /* 最大高度 */
+  overflow-y: auto; /* 內容超過時顯示捲軸 */
+  font-family: var(--title-font);
+  outline: none; /* 移除 focus 時个預設 outline，因為 JS 會 focus 佢 */
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0; /* 分隔線 */
+  margin-bottom: 15px;
+}
+
+.popup-header h4 { /* Popup 標題 */
+  margin: 0;
+  font-size: 1.2em;
+  font-weight: 600;
+  color: inherit; /* 繼承 #selectionPopup 个文字顏色 */
+}
+
+#selectionPopupCloseBtn { /* 關閉撳鈕 */
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #888;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+#selectionPopupCloseBtn:hover,
+#selectionPopupCloseBtn:focus-visible { /* 加上 focus-visible 樣式 */
+  color: #333;
+  outline: none; /* 確保自訂 focus 樣式時無預設 outline */
+  /* 可選：加上同其他元素一樣个 focus glow */
+  /* box-shadow: 0 0 var(--focus-glow-blur) var(--focus-glow-spread) var(--focus-glow-color); */
+}
+
+#selectionPopupContent ul { /* 讀音列表 */
+  list-style: disc; /* 改用實心圓點 */
+  padding-left: 25px; /* 增加左邊內距分圓點空間 */
+  margin: 0;
+}
+
+#selectionPopupContent li { /* 列表項目 */
+  padding: 6px 2px; /* 微調 padding */
+  /* border-bottom: 1px solid #f0f0f0; */ /* 暫時拿掉底線，做得看效果 */
+  font-size: 1em;
+  line-height: 1.6; /* 微調行高 */
+}
+
+#selectionPopupContent li .pronunciation-source { /* 讀音來源標示 */
+  font-size: 0.85em;
+  color: #777;
+  margin-left: 8px;
+}
+
+#selectionPopupContent .popup-not-found { /* 尋無讀音个訊息 */
+  padding: 10px 0;
+  font-style: italic;
+  color: #555;
+  text-align: center;
+}
+
 /* --- 夜間模式 (Dark Mode) 顏色設定 --- */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -651,6 +744,42 @@ span[data-varname].active-dialect-level {
   tr#nowPlaying.paused-playback {
     /* background-color: var(--dark-paused-yellow); <-- 這行做得註解掉或拿掉 */
     animation: pulse-dark-yellow-effect 3s infinite ease-in-out; /* 應用暗夜模式个動畫 */
+  }
+
+  /* --- 暗夜模式下个選詞 Popup 樣式 --- */
+  #selectionPopupBackdrop {
+    background-color: rgba(0, 0, 0, 0.6); /* 暗夜模式用較深个背景 */
+  }
+
+  #selectionPopup {
+    background-color: var(--dark-surface-color, #2c2c2c); /* 暗夜模式背景 */
+    color: var(--main-text-color); /* 暗夜模式文字 (已在 :root 設定) */
+    box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+  }
+
+  .popup-header {
+    border-bottom-color: rgba(255, 255, 255, 0.15); /* 暗夜模式分隔線 */
+  }
+
+  #selectionPopupCloseBtn {
+    color: #aaa;
+  }
+
+  #selectionPopupCloseBtn:hover,
+  #selectionPopupCloseBtn:focus-visible {
+    color: #fff;
+    /* 可選：加上同其他元素一樣个 focus glow (暗模式版本) */
+    /* box-shadow: 0 0 var(--focus-glow-blur) var(--focus-glow-spread) var(--focus-glow-color); */
+  }
+
+  #selectionPopupContent li {
+    /* border-bottom-color: rgba(255, 255, 255, 0.1); */ /* 暫時拿掉底線 */
+  }
+  #selectionPopupContent li .pronunciation-source {
+    color: #aaa; /* 暗模式下來源標示用較淺个灰色 */
+  }
+  #selectionPopupContent .popup-not-found {
+    color: #bbb; /* 暗夜模式尋無訊息文字顏色 */
   }
 }
 

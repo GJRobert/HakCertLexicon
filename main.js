@@ -58,6 +58,16 @@ let currentAudioIndex = 0; // 當前音檔索引也移到全域
 let finishedTableName = null; // 暫存剛播放完畢的表格名稱 (用於書籤替換)
 let finishedCat = null; // 暫存剛播放完畢的類別名稱 (用於書籤替換)
 let loadedViaUrlParams = false; // <-- 新增：標記是否透過 URL 參數載入
+let activeSelectionPopup = false; // <-- 新增：標記選詞 popup 是否開啟
+
+// --- 新增：所有已知的資料變數名稱 (用於「共腔尋詞」) ---
+const allKnownDataVars = [
+  '四基', '四初', '四中', '四中高', '四高',
+  '海基', '海初', '海中', '海中高', '海高',
+  '大基', '大初', '大中', '大中高', '大高',
+  '平基', '平初', '平中', '平中高', '平高',
+  '安基', '安初', '安中', '安中高', '安高'
+];
 
 /* Gemini 老師。這種方式還是會因為 CORS 被擋下，無法偵測
 function checkAudioStatus(url) {
@@ -1414,6 +1424,12 @@ document.addEventListener('DOMContentLoaded', function () {
     : null; // 處理 modal 可能不存在个情況
   const dialectLevelLinks = document.querySelectorAll('.dialect a');
 
+  // --- 新增：選詞 Popup 相關元素 ---
+  const selectionPopup = document.getElementById('selectionPopup');
+  const selectionPopupBackdrop = document.getElementById('selectionPopupBackdrop');
+  const selectionPopupContent = document.getElementById('selectionPopupContent');
+  const selectionPopupCloseBtn = document.getElementById('selectionPopupCloseBtn');
+
   // --- 新增：在 #progressDropdown 頭前加入 emoji ---
   if (isFileProtocol && progressDropdown && progressDropdown.parentNode) {
     const emojiNode = document.createTextNode('💻 ');
@@ -1827,14 +1843,42 @@ document.addEventListener('DOMContentLoaded', function () {
     if (progressDropdown) progressDropdown.selectedIndex = 0;
   }
 
+  // --- 新增：設定選詞 Popup 功能 ---
+  if (selectionPopup && selectionPopupBackdrop && selectionPopupContent && selectionPopupCloseBtn && contentContainer) { // *** MODIFIED: Use contentContainer ***
+    contentContainer.addEventListener('mouseup', (event) => handleTextSelectionInSentence(event, selectionPopup, selectionPopupContent, selectionPopupBackdrop, contentContainer)); // *** MODIFIED: Pass contentContainer ***
+
+    selectionPopupCloseBtn.addEventListener('click', () => hidePronunciationPopup(selectionPopup, selectionPopupBackdrop));
+    selectionPopupBackdrop.addEventListener('click', () => hidePronunciationPopup(selectionPopup, selectionPopupBackdrop));
+
+    // 點擊 popup 內容區域時，不要觸發 backdrop 的關閉事件
+    selectionPopup.addEventListener('click', (event) => {
+        event.stopPropagation();
+    });
+
+  } else {
+    console.error('一個或多個選詞 Popup 相關元素尋無。');
+  }
+  // --- 新增結束 ---
+
+  // --- 新增：監聽鍵盤事件 (全域，包含 Esc 關閉 popup) ---
+  // 這會取代下面舊的 keydown 監聽器，並加入 popup 處理
+  document.removeEventListener('keydown', globalKeydownHandler); // 先移除舊的，避免重複
+  document.addEventListener('keydown', globalKeydownHandler);
+  console.log('全域鍵盤監聽器已設定 (包含 Popup 關閉)。');
+  // --- 新增結束 ---
+
+
+
   // --- 再加一次確保，特別是如果 URL 參數處理是異步的 ---
   // 或者直接放在最尾項
   setTimeout(adjustHeaderFontSizeOnOverflow, 50); // 稍微延遲
 });
 
 document.addEventListener('keydown', function(event) {
+  // 這個監聽器會被新的 globalKeydownHandler 取代
+  // 保留這段程式碼的註解或將其內容合併到新的處理函式中
   // --- 空白鍵：暫停/繼續播放 ---
-  if (event.key === ' ' || event.code === 'Space') {
+  if (!activeSelectionPopup && (event.key === ' ' || event.code === 'Space')) { // 加上 !activeSelectionPopup 條件
     const activeElement = document.activeElement;
     // 檢查目前 focus 个元素係無係輸入框、選擇單、按鈕這兜
     const isInteractiveElementFocused = activeElement && (
@@ -1898,7 +1942,7 @@ document.addEventListener('keydown', function(event) {
     }
   }
   // --- Esc 鍵：停止播放 ---
-  if (event.key === 'Escape' || event.code === 'Escape') {
+  if (event.key === 'Escape' || event.code === 'Escape') { // Popup 的 Esc 處理會在新的 globalKeydownHandler
     const activeElement = document.activeElement;
     const isInteractiveElementFocused = activeElement && (
       activeElement.tagName === 'INPUT' ||
@@ -1924,6 +1968,99 @@ document.addEventListener('keydown', function(event) {
     // 如果無互動元素 focus，也無音樂在播，Esc 就無作用
   }
 });
+
+
+// --- 新增：全域鍵盤事件處理 (取代舊的) ---
+function globalKeydownHandler(event) {
+  const activeElement = document.activeElement;
+  const isInteractiveElementFocused = activeElement && (
+    activeElement.tagName === 'INPUT' ||
+    activeElement.tagName === 'TEXTAREA' ||
+    activeElement.tagName === 'SELECT' ||
+    activeElement.tagName === 'BUTTON' ||
+    activeElement.isContentEditable ||
+    activeElement.closest('#selectionPopup') // 如果焦點在 popup 內，也算互動
+  );
+
+  // --- Esc 鍵：優先關閉 Popup，然後才停止播放 ---
+  if (event.key === 'Escape' || event.code === 'Escape') {
+    if (activeSelectionPopup) {
+      event.preventDefault(); // 避免其他 Esc 行為
+      const selectionPopup = document.getElementById('selectionPopup');
+      const selectionPopupBackdrop = document.getElementById('selectionPopupBackdrop');
+      hidePronunciationPopup(selectionPopup, selectionPopupBackdrop);
+      console.log('Global hotkey: Escape pressed, closing selection popup.');
+    } else if (isInteractiveElementFocused && activeElement.tagName !== 'BODY' && !activeElement.closest('#selectionPopup')) {
+      // 如果有互動元素係 focus 狀態 (且非 popup)，就先 blur 佢
+      activeElement.blur();
+      event.preventDefault();
+      console.log('Global hotkey: Escape pressed, blurred active element:', activeElement);
+    } else if (isPlaying) {
+      // 如果無互動元素係 focus 狀態，而且音樂在播放中，就停止播放
+      const stopButton = document.getElementById('stopBtn');
+      if (stopButton) {
+        stopButton.click();
+        console.log('Global hotkey: Escape pressed (no interactive focus, no popup), stopping playback.');
+      }
+    }
+    return; // Esc 鍵處理完畢
+  }
+
+  // --- 空白鍵：暫停/繼續播放 (僅在 Popup 未開啟且非互動元素 focus 時) ---
+  if (!activeSelectionPopup && (event.key === ' ' || event.code === 'Space')) {
+    if (!isInteractiveElementFocused || activeElement.tagName === 'BODY') { // 確保不是在輸入框等地方按空白
+      if (isPlaying) {
+        event.preventDefault(); // 避免頁面捲動
+        const pauseResumeButton = document.getElementById('pauseResumeBtn');
+        if (pauseResumeButton) {
+          pauseResumeButton.click();
+          console.log('Global hotkey: Spacebar pressed (isPlaying), toggling pause/resume.');
+        }
+      } else { // !isPlaying: 載入並播放第一筆書籤
+        const progressDropdown = document.getElementById('progressDropdown');
+        if (progressDropdown && progressDropdown.options.length > 1) {
+          event.preventDefault(); // 處理了事件，避免頁面捲動
+          const selectedValue = progressDropdown.options[1].value;
+          const bookmarks = JSON.parse(localStorage.getItem('hakkaBookmarks')) || [];
+          const firstBookmark = bookmarks.find(bm => bm.tableName + '||' + bm.cat === selectedValue);
+
+          if (firstBookmark) {
+            const targetTableName = firstBookmark.tableName;
+            const targetCategory = firstBookmark.cat;
+            const targetRowIdToGo = firstBookmark.rowId;
+            const dataVarName = mapTableNameToDataVar(targetTableName);
+
+            if (dataVarName && typeof window[dataVarName] !== 'undefined') {
+              const dataObject = window[dataVarName];
+              console.log('Global hotkey: Spacebar pressed (!isPlaying), loading first bookmark:', firstBookmark);
+
+              document.querySelectorAll('span[data-varname]').forEach(span => {
+                span.classList.remove('active-dialect-level');
+              });
+              const activeDialectSpan = document.querySelector(`.dialect > span[data-varname="${dataVarName}"]`);
+              if (activeDialectSpan) {
+                activeDialectSpan.classList.add('active-dialect-level');
+              }
+              generate(dataObject, targetCategory, targetRowIdToGo);
+              progressDropdown.selectedIndex = 1;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+// --- 全域鍵盤事件處理結束 ---
+
+
+
+
+
+
+
+
+
+
 
 /* 標示大埔變調 */
 function 大埔高降異化() {
@@ -2852,3 +2989,149 @@ document.addEventListener('click', function(event) {
 });
 console.log('Automatic blur event listener added to document for all buttons (using delegation).');
 // --- 修改結束 ---
+
+// --- 新增：選詞發音 Popup 相關函式 ---
+
+/**
+ * 將資料變數名（如 "四基"）轉換為完整的腔調級別名稱（如 "四縣基礎級"）。
+ * @param {string} dataVarNameStr - 資料變數名。
+ * @returns {string} 完整的腔調級別名稱。
+ */
+function getFullLevelName(dataVarNameStr) {
+  if (!dataVarNameStr || dataVarNameStr.length < 2) return dataVarNameStr;
+
+  let dialectChar = dataVarNameStr.substring(0, 1);
+  let levelAbbr = dataVarNameStr.substring(1);
+  let dialectName = '';
+  let levelName = '';
+
+  switch (dialectChar) {
+    case '四': dialectName = '四縣'; break;
+    case '海': dialectName = '海陸'; break;
+    case '大': dialectName = '大埔'; break;
+    case '平': dialectName = '饒平'; break;
+    case '安': dialectName = '詔安'; break;
+    default: dialectName = dialectChar;
+  }
+
+  switch (levelAbbr) {
+    case '基': levelName = '基礎級'; break;
+    case '初': levelName = '初級'; break;
+    case '中': levelName = '中級'; break;
+    case '中高': levelName = '中高級'; break;
+    case '高': levelName = '高級'; break;
+    default: levelName = levelAbbr;
+  }
+  return dialectName + levelName;
+}
+
+/**
+ * 在所有已知的客語資料中搜尋指定文字的發音。
+ * @param {string} searchText - 要搜尋的文字。
+ * @returns {Array<object>} 包含發音和來源的物件陣列。每個物件格式：{ pronunciation: string, source: string }
+ */
+function findPronunciationsInAllData(searchText) {
+  const foundReadings = [];
+  const uniqueEntries = new Set(); // 用來避免重複的 (發音 + 來源)
+
+  if (!searchText || searchText.trim().length === 0) {
+    return [];
+  }
+  const normalizedSearchText = searchText.trim();
+
+  allKnownDataVars.forEach(dataVarName => {
+    const dataObject = window[dataVarName];
+    if (dataObject && dataObject.content) {
+      try {
+        const vocabularyArray = csvToArray(dataObject.content);
+        const sourceName = getFullLevelName(dataObject.name);
+
+        vocabularyArray.forEach(line => {
+          if (line.客家語 && line.客家語.includes(normalizedSearchText)) {
+            // 若選取的詞完全等於詞條的客家語，優先採用
+            if (line.客家語 === normalizedSearchText && line.客語標音) {
+              const entryKey = `${line.客語標音}|${sourceName}`;
+              if (!uniqueEntries.has(entryKey)) {
+                foundReadings.push({ pronunciation: line.客語標音, source: sourceName });
+                uniqueEntries.add(entryKey);
+              }
+            }
+            // 若選取的詞是詞條客家語的一部分，也加入 (作為備選，如果上面沒完全符合的)
+            // 這裡可以再細化邏輯，例如只在找不到完全符合時才加入部分符合的
+            // 目前：只要包含就加入，由 Set 去重
+            else if (line.客語標音) {
+                 const entryKey = `${line.客語標音} (詞目: ${line.客家語})|${sourceName}`;
+                 if (!uniqueEntries.has(entryKey) && foundReadings.length < 20) { // 限制結果數量避免過多
+                    foundReadings.push({ pronunciation: `${line.客語標音} (詞目: ${line.客家語})`, source: sourceName });
+                    uniqueEntries.add(entryKey);
+                 }
+            }
+          }
+        });
+      } catch (e) {
+        console.error(`處理資料 ${dataVarName} 時發生錯誤:`, e);
+      }
+    }
+  });
+  return foundReadings;
+}
+
+/**
+ * 顯示選詞發音 Popup。
+ * @param {string} selectedText - 被選取的文字。
+ * @param {Array<object>} readings - 搜尋到的發音陣列。
+ * @param {HTMLElement} popupEl - Popup 元素。
+ * @param {HTMLElement} contentEl - Popup 內容區域元素。
+ * @param {HTMLElement} backdropEl - Popup 背景元素。
+ */
+function showPronunciationPopup(selectedText, readings, popupEl, contentEl, backdropEl) {
+  contentEl.innerHTML = ''; // 清空舊內容
+
+  if (readings.length > 0) {
+    const ul = document.createElement('ul');
+    readings.forEach(reading => {
+      const li = document.createElement('li');
+      li.textContent = reading.pronunciation;
+      const sourceSpan = document.createElement('span');
+      sourceSpan.className = 'pronunciation-source';
+      sourceSpan.textContent = `(${reading.source})`;
+      li.appendChild(sourceSpan);
+      ul.appendChild(li);
+    });
+    contentEl.appendChild(ul);
+  } else {
+    contentEl.innerHTML = '<p class="popup-not-found">尋無讀音。還係縮短尋个字詞？</p>';
+  }
+
+  backdropEl.style.display = 'block';
+  popupEl.style.display = 'block';
+  popupEl.focus(); // 將焦點移到 popup，方便鍵盤操作 (例如 Esc 關閉)
+  activeSelectionPopup = true;
+}
+
+/**
+ * 隱藏選詞發音 Popup。
+ * @param {HTMLElement} popupEl - Popup 元素。
+ * @param {HTMLElement} backdropEl - Popup 背景元素。
+ */
+function hidePronunciationPopup(popupEl, backdropEl) {
+  if (popupEl) popupEl.style.display = 'none';
+  if (backdropEl) backdropEl.style.display = 'none';
+  activeSelectionPopup = false;
+}
+
+// *** MODIFIED: Added generatedArea parameter ***
+function handleTextSelectionInSentence(event, popupEl, contentEl, backdropEl, generatedArea) {
+  let target = event.target;
+  let sentenceSpan = target.closest('span.sentence');
+
+  if (!sentenceSpan || !generatedArea.contains(sentenceSpan)) return; // *** MODIFIED: Use generatedArea ***
+
+  const selectedText = window.getSelection().toString().trim();
+  if (selectedText.length > 0 && selectedText.length <= 15) { // 加入長度限制，避免選太長
+    console.log('選中例句文字:', selectedText);
+    const readings = findPronunciationsInAllData(selectedText);
+    showPronunciationPopup(selectedText, readings, popupEl, contentEl, backdropEl);
+  }
+}
+// --- 選詞發音 Popup 相關函式結束 ---
