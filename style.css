@@ -507,6 +507,49 @@ span[data-varname].active-dialect-level {
   outline: none; /* 移除 focus 時个預設 outline，因為 JS 會 focus 佢 */
 }
 
+.popup-controls { /* 新增：控制項容器 */
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+/* Toggle Switch Styles */
+.popup-toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popup-toggle-switch .toggle-label {
+  font-size: 0.9em;
+  color: var(--main-text-color);
+  cursor: pointer;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px; /* 略為縮小 */
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .3s; /* 加快一點動畫 */
+}
+
 .popup-header {
   display: flex;
   justify-content: space-between;
@@ -515,6 +558,30 @@ span[data-varname].active-dialect-level {
   border-bottom: 1px solid #e0e0e0; /* 分隔線 */
   margin-bottom: 15px;
 }
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px; /* 配合縮小 */
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+}
+
+input:checked + .slider {
+  background-color: var(--focus-glow-color, #2196F3); /* 用主題強調色 */
+}
+
+input:focus-visible + .slider {
+  box-shadow: 0 0 2px var(--focus-glow-color, #2196F3);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px); /* 調整滑動距離 width - dot_width - 2*left_pos = 44 - 16 - 6 = 22 */
+}
+
 
 .popup-header h4 { /* Popup 標題 */
   margin: 0;
@@ -757,6 +824,10 @@ span[data-varname].active-dialect-level {
     box-shadow: 0 6px 25px rgba(0,0,0,0.4);
   }
 
+  .popup-controls { /* 暗夜模式控制項容器 */
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+  }
+
   .popup-header {
     border-bottom-color: rgba(255, 255, 255, 0.15); /* 暗夜模式分隔線 */
   }
@@ -771,6 +842,15 @@ span[data-varname].active-dialect-level {
     /* 可選：加上同其他元素一樣个 focus glow (暗模式版本) */
     /* box-shadow: 0 0 var(--focus-glow-blur) var(--focus-glow-spread) var(--focus-glow-color); */
   }
+  
+  /* 暗夜模式 Toggle Switch */
+  .popup-toggle-switch .toggle-label {
+    color: var(--main-text-color);
+  }
+  .slider {
+    background-color: #555; /* 暗模式下未選中背景 */
+  }
+  /* input:checked + .slider 已用 var(--focus-glow-color) */
 
   #selectionPopupContent li {
     /* border-bottom-color: rgba(255, 255, 255, 0.1); */ /* 暫時拿掉底線 */

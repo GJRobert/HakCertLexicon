@@ -59,6 +59,8 @@ let finishedTableName = null; // 暫存剛播放完畢的表格名稱 (用於書
 let finishedCat = null; // 暫存剛播放完畢的類別名稱 (用於書籤替換)
 let loadedViaUrlParams = false; // <-- 新增：標記是否透過 URL 參數載入
 let activeSelectionPopup = false; // <-- 新增：標記選詞 popup 是否開啟
+let currentActiveDialectLevelFullName = ''; // <-- 修改變數名：儲存目前頁面顯示的完整腔調級別全名
+let currentActiveMainDialectName = ''; // <-- 新增：儲存目前頁面顯示的主要腔調名稱 (例如：四縣)
 
 // --- 新增：所有已知的資料變數名稱 (用於「共腔尋詞」) ---
 const allKnownDataVars = [
@@ -163,6 +165,8 @@ function csvToArray(str, delimiter = ',') {
 function generate(content, initialCategory = null, targetRowId = null) {
   // --- 保留 generate 開頭的變數定義和分析腔別級別的邏輯 ---
   console.log('Generate called for:', content.name); // 增加日誌
+  currentActiveDialectLevelFullName = getFullLevelName(content.name); // <-- 設定目前作用中的完整腔調級別全名
+  // currentActiveMainDialectName 會在下面 switch(腔) 後設定
 
   // --- 新增：在 generate 開始時，確保清除舊的類別選中狀態 ---
   document.querySelectorAll('.radioItem').forEach((label) => {
@@ -218,24 +222,30 @@ function generate(content, initialCategory = null, targetRowId = null) {
     case '四':
       檔腔 = 'si';
       腔名 = '四縣';
+      currentActiveMainDialectName = '四縣'; // <-- 設定主要腔調名
       break;
     case '海':
       檔腔 = 'ha';
       腔名 = '海陸';
+      currentActiveMainDialectName = '海陸'; // <-- 設定主要腔調名
       break;
     case '大':
       檔腔 = 'da';
       腔名 = '大埔';
+      currentActiveMainDialectName = '大埔'; // <-- 設定主要腔調名
       break;
     case '平':
       檔腔 = 'rh';
       腔名 = '饒平';
+      currentActiveMainDialectName = '饒平'; // <-- 設定主要腔調名
       break;
     case '安':
       檔腔 = 'zh';
       腔名 = '詔安';
+      currentActiveMainDialectName = '詔安'; // <-- 設定主要腔調名
       break;
     default:
+      currentActiveMainDialectName = ''; // 未知腔調
       break;
   }
   switch (級) {
@@ -3031,10 +3041,11 @@ function getFullLevelName(dataVarNameStr) {
  * @returns {Array<object>} 包含發音和來源的物件陣列。每個物件格式：{ pronunciation: string, source: string }
  */
 function findPronunciationsInAllData(searchText) {
-  const foundReadings = [];
-  const uniqueEntries = new Set(); // 用來避免重複的 (發音 + 來源)
+  let foundReadings = []; // 改用 let
+  const uniqueEntries = new Set();
 
   if (!searchText || searchText.trim().length === 0) {
+    console.log('Search text is empty, returning empty array.');
     return [];
   }
   const normalizedSearchText = searchText.trim();
@@ -3047,24 +3058,33 @@ function findPronunciationsInAllData(searchText) {
         const sourceName = getFullLevelName(dataObject.name);
 
         vocabularyArray.forEach(line => {
-          if (line.客家語 && line.客家語.includes(normalizedSearchText)) {
-            // 若選取的詞完全等於詞條的客家語，優先採用
-            if (line.客家語 === normalizedSearchText && line.客語標音) {
-              const entryKey = `${line.客語標音}|${sourceName}`;
+          if (line.客家語 && line.客語標音) { // 確保客家語和標音都存在
+            const isExact = line.客家語 === normalizedSearchText;
+            const isPartial = !isExact && line.客家語.includes(normalizedSearchText);
+
+            if (isExact) {
+              const entryKey = `${line.客語標音}|${sourceName}|exact|${line.客家語}`;
               if (!uniqueEntries.has(entryKey)) {
-                foundReadings.push({ pronunciation: line.客語標音, source: sourceName });
+                foundReadings.push({
+                  pronunciation: line.客語標音,
+                  source: sourceName,
+                  isExactMatch: true,
+                  originalTerm: line.客家語
+                });
                 uniqueEntries.add(entryKey);
               }
-            }
-            // 若選取的詞是詞條客家語的一部分，也加入 (作為備選，如果上面沒完全符合的)
-            // 這裡可以再細化邏輯，例如只在找不到完全符合時才加入部分符合的
-            // 目前：只要包含就加入，由 Set 去重
-            else if (line.客語標音) {
-                 const entryKey = `${line.客語標音} (詞目: ${line.客家語})|${sourceName}`;
-                 if (!uniqueEntries.has(entryKey) && foundReadings.length < 20) { // 限制結果數量避免過多
-                    foundReadings.push({ pronunciation: `${line.客語標音} (詞目: ${line.客家語})`, source: sourceName });
-                    uniqueEntries.add(entryKey);
-                 }
+            } else if (isPartial) {
+              const entryKey = `${line.客語標音}|${sourceName}|partial|${line.客家語}`;
+              // 增加結果數量限制，避免過多部分符合的結果
+              if (!uniqueEntries.has(entryKey) && foundReadings.length < 50) {
+                foundReadings.push({
+                  pronunciation: line.客語標音,
+                  source: sourceName,
+                  isExactMatch: false,
+                  originalTerm: line.客家語
+                });
+                uniqueEntries.add(entryKey);
+              }
             }
           }
         });
@@ -3073,6 +3093,7 @@ function findPronunciationsInAllData(searchText) {
       }
     }
   });
+  console.log(`Found ${foundReadings.length} readings for "${searchText}" before sorting/filtering in popup.`);
   return foundReadings;
 }
 
@@ -3085,23 +3106,84 @@ function findPronunciationsInAllData(searchText) {
  * @param {HTMLElement} backdropEl - Popup 背景元素。
  */
 function showPronunciationPopup(selectedText, readings, popupEl, contentEl, backdropEl) {
-  contentEl.innerHTML = ''; // 清空舊內容
+  const showOtherAccentsToggle = document.getElementById('showOtherAccentsToggle');
 
-  if (readings.length > 0) {
-    const ul = document.createElement('ul');
-    readings.forEach(reading => {
-      const li = document.createElement('li');
-      li.textContent = reading.pronunciation;
-      const sourceSpan = document.createElement('span');
-      sourceSpan.className = 'pronunciation-source';
-      sourceSpan.textContent = `(${reading.source})`;
-      li.appendChild(sourceSpan);
-      ul.appendChild(li);
+  // 內部函式，用來實際產生列表
+  function renderPronunciationList() {
+    contentEl.innerHTML = ''; // 清空舊內容
+    const showAllAccents = showOtherAccentsToggle ? showOtherAccentsToggle.checked : false;
+    console.log(`Rendering list. Show all accents: ${showAllAccents}. Current active main dialect: ${currentActiveMainDialectName}, full level: ${currentActiveDialectLevelFullName}`);
+
+    let displayReadings = [...readings]; // 複製一份來操作
+
+    if (!showAllAccents) {
+      // 若開關關閉，只顯示目前主要腔調的結果 (所有級別)
+      displayReadings = displayReadings.filter(r => r.source.startsWith(currentActiveMainDialectName));
+    }
+
+    // 排序：1. 完全符合優先, 2. 目前腔調優先
+    displayReadings.sort((a, b) => {
+      // 優先顯示完全符合的
+      if (a.isExactMatch && !b.isExactMatch) return -1;
+      if (!a.isExactMatch && b.isExactMatch) return 1;
+
+      // 2. 目前主要腔調優先 (所有級別)
+      const aIsCurrentMainDialect = a.source.startsWith(currentActiveMainDialectName);
+      const bIsCurrentMainDialect = b.source.startsWith(currentActiveMainDialectName);
+      if (aIsCurrentMainDialect && !bIsCurrentMainDialect) return -1;
+      if (!aIsCurrentMainDialect && bIsCurrentMainDialect) return 1;
+      
+      // 3. 若符合類型和主要腔調都相同，按原詞目字母排序
+      if (a.originalTerm < b.originalTerm) return -1;
+      if (a.originalTerm > b.originalTerm) return 1;
+
+      // 4. 若原詞目也相同，按完整來源名稱排序 (例如 四縣初級 會在 四縣基礎級 後面)
+      if (a.source < b.source) return -1;
+      if (a.source > b.source) return 1;
+
+      return 0; // 都相同
     });
-    contentEl.appendChild(ul);
-  } else {
-    contentEl.innerHTML = '<p class="popup-not-found">尋無讀音。還係縮短尋个字詞？</p>';
+
+    if (displayReadings.length > 0) {
+      const ul = document.createElement('ul');
+      displayReadings.forEach(reading => {
+        const li = document.createElement('li');
+        let displayText = reading.pronunciation;
+        if (!reading.isExactMatch) {
+          // 只在部分符合時顯示原詞目
+          displayText += ` (詞目: ${reading.originalTerm})`;
+        }
+        li.textContent = displayText;
+        
+        const sourceSpan = document.createElement('span');
+        sourceSpan.className = 'pronunciation-source';
+        sourceSpan.textContent = `(${reading.source})`;
+        li.appendChild(sourceSpan);
+        ul.appendChild(li);
+      });
+      contentEl.appendChild(ul);
+    } else {
+      // 根據開關狀態和原始搜尋結果來決定提示訊息
+      if (showAllAccents) { // 開關打開，但所有腔調都尋無
+        contentEl.innerHTML = '<p class="popup-not-found">在所有腔頭中都尋無讀音。還係縮短尋个字詞？</p>';
+      } else { // 開關關閉
+        if (readings.some(r => !r.source.startsWith(currentActiveMainDialectName))) { // 目前主要腔調尋無，但其他主要腔調有結果
+          contentEl.innerHTML = `<p class="popup-not-found">在這隻【${currentActiveMainDialectName}】腔頭尋無讀音。試看啊打開「顯示其他腔頭」？</p>`;
+        } else { // 所有腔調都尋無，或者其他腔調也尋無
+          contentEl.innerHTML = '<p class="popup-not-found">尋無讀音。還係縮短尋个字詞？</p>';
+        }
+      }
+    }
   }
+
+  // 設定開關事件監聽 (如果開關存在)
+  if (showOtherAccentsToggle) {
+    // 為確保監聽器不重複添加，可以先移除再添加，或用 cloneNode 技巧 (如先前範例)
+    // 簡單起見，這裡直接添加，假設 popup 每次顯示都會重新執行這段
+    showOtherAccentsToggle.onchange = renderPronunciationList; // 用 onchange 確保覆蓋
+  }
+
+  renderPronunciationList(); // 第一次顯示時呼叫
 
   backdropEl.style.display = 'block';
   popupEl.style.display = 'block';
